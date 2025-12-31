@@ -17,9 +17,10 @@ import {
   Package,
   Home,
   CheckCircle,
-  Palette
+  Palette,
 } from 'lucide-react'
 import { InputField } from '@/components/InputField'
+import { ProductImage } from '@/components/ProductImage'
 import { ALGERIA_WILAYAS, WILAYA_COMMUNES, PRODUCT_SIZES, PRODUCT_COLORS } from '@/lib/constants'
 import { LucideIcon } from 'lucide-react'
 
@@ -147,7 +148,6 @@ export default function CheckoutPage() {
       setProduct(productData)
       setVariants(variantsData || [])
     } catch (error: any) {
-      console.error('Error fetching product:', error)
       setErrors({ general: 'Error loading product: ' + error.message })
     } finally {
       setLoading(false)
@@ -250,11 +250,6 @@ export default function CheckoutPage() {
       newErrors.wilaya = 'Hand-to-Hand delivery is only available in Algiers'
     }
     
-    // Log validation results for debugging
-    if (Object.keys(newErrors).length > 0) {
-      console.log('⚠️ Validation errors:', newErrors)
-    }
-    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -309,15 +304,8 @@ export default function CheckoutPage() {
       color: formData.color || null
     }
 
-    console.log('📦 Submitting order with data:', {
-      orderData,
-      orderItemData: { ...orderItemData, order_id: 'will be set after order creation' },
-      product: { id: product.id, name: product.name }
-    })
-
     try {
-      // Step 1: Create order
-      console.log('Step 1: Creating order...')
+      // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert(orderData)
@@ -325,29 +313,20 @@ export default function CheckoutPage() {
         .single()
 
       if (orderError) {
-        console.error('❌ Order creation error:', orderError)
-        
         if (orderError.message.includes('Could not find the table')) {
           throw new Error('Orders table not found. Please run the SQL migration in Supabase.')
         }
-        
         if (orderError.message.includes('row-level security')) {
-          throw new Error('RLS policy error. Please run fix-rls-policies.sql in Supabase SQL Editor.')
+          throw new Error('RLS policy error. Please check your Supabase policies.')
         }
-        
-        // Show more detailed error
-        throw new Error(`Order creation failed: ${orderError.message} (Code: ${orderError.code || 'unknown'})`)
+        throw new Error(`Order creation failed: ${orderError.message}`)
       }
 
       if (!order || !order.id) {
-        console.error('❌ Order created but no ID returned:', order)
         throw new Error('Failed to create order - no order ID returned')
       }
 
-      console.log('✅ Order created successfully:', order.id)
-
-      // Step 2: Create order item
-      console.log('Step 2: Creating order item...')
+      // Create order item
       orderItemData.order_id = order.id
       
       const { data: orderItem, error: itemError } = await supabase
@@ -357,33 +336,17 @@ export default function CheckoutPage() {
         .single()
 
       if (itemError) {
-        console.error('❌ Order item creation error:', itemError)
-        
         if (itemError.message.includes('Could not find the table')) {
           throw new Error('Order_items table not found. Please run the SQL migration in Supabase.')
         }
-        
         if (itemError.message.includes('row-level security')) {
-          throw new Error('RLS policy error for order_items. Please run fix-rls-policies.sql in Supabase SQL Editor.')
+          throw new Error('RLS policy error for order_items. Please check your Supabase policies.')
         }
-        
-        throw new Error(`Order item creation failed: ${itemError.message} (Code: ${itemError.code || 'unknown'})`)
+        throw new Error(`Order item creation failed: ${itemError.message}`)
       }
-
-      console.log('✅ Order item created successfully:', orderItem)
-      console.log('🎉 Complete order submitted:', { orderId: order.id, orderItemId: orderItem?.id })
 
       setOrderSuccess(true)
     } catch (error: any) {
-      console.error('❌ Error submitting order:', error)
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      })
-      
-      // Show user-friendly error message
       const errorMessage = error.message || 'An unexpected error occurred. Please try again.'
       setErrors({ general: errorMessage })
     } finally {
@@ -555,16 +518,16 @@ export default function CheckoutPage() {
               
               {/* Product Card */}
               <div className="flex items-center border-b border-gray-200 pb-4 mb-4">
-                <div className="w-16 h-16 mr-4 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                  {product.images && product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
-                  )}
+                <div className="w-20 h-20 mr-4 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                  <ProductImage 
+                    src={product.images || product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-grow">
-                  <p className="font-semibold leading-tight">{product.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-semibold leading-tight text-gray-900">{product.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">
                     {productPrice.toLocaleString()} DA
                   </p>
                 </div>

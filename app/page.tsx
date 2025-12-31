@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { ProductImage } from '@/components/ProductImage'
 
 export default async function Home() {
   const { data: products, error } = await supabase
@@ -45,15 +46,14 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map(product => (
               <div key={product.id} className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-2xl transition-shadow">
-                {/* Product Image Placeholder */}
-                <div className="w-full h-64 bg-gray-700 flex items-center justify-center">
-                  {product.images && product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-gray-500">No Image</span>
-                  )}
+                {/* Product Image */}
+                <div className="w-full h-64 bg-gray-700 flex items-center justify-center overflow-hidden">
+                  <ProductImage 
+                    src={product.images || product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-
                 {/* Product Info */}
                 <div className="p-6">
                   <h3 className="text-2xl font-bold mb-2">{product.name}</h3>

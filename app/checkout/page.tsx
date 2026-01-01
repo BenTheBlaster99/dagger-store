@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -97,7 +97,7 @@ function SelectField({ label, icon: Icon, error, options, ...props }: SelectFiel
   )
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const productId = searchParams.get('product')
@@ -851,5 +851,18 @@ export default function CheckoutPage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-white text-gray-900">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-3 text-lg font-medium">Loading checkout...</span>
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   )
 }

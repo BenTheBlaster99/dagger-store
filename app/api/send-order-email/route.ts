@@ -1,20 +1,12 @@
-import { Resend } from 'resend'
-import { NextRequest, NextResponse } from 'next/server'
+import { Resend } from "resend"
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
+  if (!process.env.RESEND_API_KEY) {
+    return new Response("Missing RESEND_API_KEY", { status: 500 })
+  }
+
   try {
-    // Initialize Resend inside the function to avoid build-time errors
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) {
-      console.error('RESEND_API_KEY is not set')
-      return NextResponse.json(
-        { error: 'Email service not configured' },
-        { status: 500 }
-      )
-    }
-
-    const resend = new Resend(apiKey)
-    const orderData = await request.json()
+    const orderData = await req.json()
 
     // Extract order information
     const {
@@ -32,6 +24,8 @@ export async function POST(request: NextRequest) {
       color,
       notes,
     } = orderData
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
@@ -147,19 +141,18 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Resend error:', error)
-      return NextResponse.json(
-        { error: 'Failed to send email', details: error },
-        { status: 500 }
-      )
+      return new Response(JSON.stringify({ error: 'Failed to send email', details: error }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
-    return NextResponse.json({ success: true, data })
+    return Response.json({ success: true, data })
   } catch (error: any) {
     console.error('Email API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    )
+    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }
-

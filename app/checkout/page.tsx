@@ -4,9 +4,9 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   ShoppingBag, 
-  ArrowLeft, 
   Loader2, 
   Truck, 
   Handshake, 
@@ -18,9 +18,13 @@ import {
   Home,
   CheckCircle,
   Palette,
+  Menu,
+  X,
+  Instagram,
+  Mail,
 } from 'lucide-react'
 import { InputField } from '@/components/InputField'
-import { ProductImage } from '@/components/ProductImage'
+import { ProductImageGallery } from '@/components/ProductImageGallery'
 import { ALGERIA_WILAYAS, WILAYA_COMMUNES, PRODUCT_SIZES, PRODUCT_COLORS } from '@/lib/constants'
 import { LucideIcon } from 'lucide-react'
 
@@ -98,6 +102,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const productId = searchParams.get('product')
 
+  const [menuOpen, setMenuOpen] = useState(false)
   const [product, setProduct] = useState<any>(null)
   const [variants, setVariants] = useState<any[]>([])
   const [selectedDelivery, setSelectedDelivery] = useState<keyof typeof DELIVERY_OPTIONS>('BUREAU')
@@ -345,6 +350,35 @@ export default function CheckoutPage() {
         throw new Error(`Order item creation failed: ${itemError.message}`)
       }
 
+      // Send email notification
+      try {
+        await fetch('/api/send-order-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customer_name: formData.customer_name.trim(),
+            phone: formData.phone.trim().replace(/\s/g, ''),
+            address: formData.address.trim(),
+            wilaya: formData.wilaya,
+            commune: formData.commune.trim(),
+            delivery_method: deliveryOption.label,
+            delivery_cost: Number(deliveryOption.price),
+            total_price: Number(totalPrice),
+            product_name: product.name,
+            quantity: Number(formData.quantity),
+            size: formData.size || null,
+            color: formData.color || null,
+            notes: formData.notes.trim() || null,
+          }),
+        })
+        // Email sent successfully (we don't show error to user if email fails)
+      } catch (emailError) {
+        // Log error but don't fail the order
+        console.error('Failed to send order email:', emailError)
+      }
+
       setOrderSuccess(true)
     } catch (error: any) {
       const errorMessage = error.message || 'An unexpected error occurred. Please try again.'
@@ -398,20 +432,57 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-black flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6" /> The Dagger
-          </Link>
-          <Link href="/" className="text-sm text-gray-600 hover:text-black transition-colors flex items-center gap-1">
-            <ArrowLeft className="h-4 w-4" /> Back to Store
-          </Link>
+      {/* Top Banner */}
+      <div className="bg-[#E5525F] text-white text-center py-2 px-4 text-sm md:text-base font-bold sticky top-0 z-[60]">
+        Exceptional clothing brand with limited stock with Dagger Clothing !
+      </div>
+      
+      <header className="bg-black border-b border-gray-800/50 sticky top-[41px] z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 relative">
+          <div className="flex items-center">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-white hover:text-gray-300 transition-colors"
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Logo - pushed to the right */}
+            <Link href="/" className="flex-shrink-0 ml-auto">
+              <Image
+                src="/daggerLogo.avif"
+                alt="The Dagger"
+                width={160}
+                height={60}
+                className="h-14 w-auto object-contain"
+                priority
+              />
+            </Link>
+          </div>
+
+          {/* Mobile Menu */}
+          {menuOpen && (
+            <div className="absolute top-full left-0 right-0 bg-black border-b border-gray-800/50 shadow-lg">
+              <nav className="px-4 py-4 space-y-3">
+                <Link
+                  href="/"
+                  onClick={() => setMenuOpen(false)}
+                  className="block text-white hover:text-gray-300 py-2 text-lg font-medium transition-colors"
+                >
+                  Home Page
+                </Link>
+              </nav>
+            </div>
+          )}
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
-        <h1 className="text-4xl font-extrabold mb-8">Checkout</h1>
-        <p className="text-lg text-gray-600 mb-10">Finalize your order by providing your delivery and contact details.</p>
+        <div className="mb-12">
+          <h1 className="text-4xl font-extrabold mb-3 text-gray-900">Checkout</h1>
+        </div>
 
         {errors.general && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
@@ -419,123 +490,147 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="lg:grid lg:grid-cols-3 lg:gap-12">
-          {/* Customer Information Form */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-200 shadow-lg mb-10 lg:mb-0">
-            <h2 className="text-2xl font-bold mb-6 border-b border-gray-200 pb-3 flex items-center gap-2">
-              <User size={20} /> Personal Information
-            </h2>
-            
-            <InputField
-              icon={User}
-              label="Full Name (Nom & Prénom)"
-              name="customer_name"
-              value={formData.customer_name}
-              onChange={handleChange}
-              placeholder="John Doe"
-              required
-              error={errors.customer_name}
-            />
+        {/* Product Image Gallery - Large View */}
+        <div className="mb-8">
+          <ProductImageGallery
+            images={Array.isArray(product.images) ? product.images : product.image ? [product.image] : []}
+            alt={product.name}
+          />
+        </div>
 
-            <InputField
-              icon={Phone}
-              label="Phone Number"
-              name="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="0550123456"
-              required
-              error={errors.phone}
-            />
-
-            <h2 className="text-2xl font-bold mb-6 border-b border-gray-200 pb-3 mt-8 flex items-center gap-2">
-              <MapPin size={20} /> Delivery Details
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-              <SelectField
-                icon={MapPin}
-                label="Wilaya (State)"
-                name="wilaya"
-                value={formData.wilaya}
-                onChange={handleChange}
-                options={wilayasForSelect}
-                required
-                error={errors.wilaya}
-              />
+        <form onSubmit={handleSubmit} className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* Forms Section */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Personal Information Card */}
+            <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <User size={24} className="text-gray-700" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
+                  <p className="text-sm text-gray-500">Tell us who you are</p>
+                </div>
+              </div>
               
-              <SelectField
-                icon={MapPin}
-                label="Commune"
-                name="commune"
-                value={formData.commune}
-                onChange={handleChange}
-                options={communesForWilaya}
-                required
-                disabled={!formData.wilaya}
-                error={errors.commune}
-              />
+              <div className="space-y-5">
+                <InputField
+                  icon={User}
+                  label="Full Name (Nom & Prénom)"
+                  name="customer_name"
+                  value={formData.customer_name}
+                  onChange={handleChange}
+                  required
+                  error={errors.customer_name}
+                />
+
+                <InputField
+                  icon={Phone}
+                  label="Phone Number"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  error={errors.phone}
+                />
+              </div>
             </div>
 
-            <InputField
-              icon={Home}
-              label="Full Address (Street, Building, etc.)"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="Apartment 4, Building 2, Street XYZ"
-              required
-              error={errors.address}
-            />
-
-            <div className="space-y-1.5 group">
-              <label className="text-xs uppercase tracking-wider text-gray-500 font-medium ml-1">
-                Notes (Optional)
-              </label>
-              <div className="relative flex items-center transition-all duration-200 bg-gray-50 border border-gray-300 hover:border-gray-400 focus-within:border-black focus-within:ring-1 focus-within:ring-black/20 rounded-lg overflow-hidden">
-                <div className="pl-3 pr-2 text-gray-400">
-                  <MessageCircle size={16} />
+            {/* Delivery Details Card */}
+            <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-lg">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <MapPin size={24} className="text-gray-700" />
                 </div>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Delivery Details</h2>
+                  <p className="text-sm text-gray-500">Where should we deliver your order?</p>
+                </div>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <SelectField
+                    icon={MapPin}
+                    label="Wilaya (State)"
+                    name="wilaya"
+                    value={formData.wilaya}
+                    onChange={handleChange}
+                    options={wilayasForSelect}
+                    required
+                    error={errors.wilaya}
+                  />
+                  
+                  <SelectField
+                    icon={MapPin}
+                    label="Commune"
+                    name="commune"
+                    value={formData.commune}
+                    onChange={handleChange}
+                    options={communesForWilaya}
+                    required
+                    disabled={!formData.wilaya}
+                    error={errors.commune}
+                  />
+                </div>
+
+                <InputField
+                  icon={Home}
+                  label="Full Address (Street, Building, etc.)"
+                  name="address"
+                  value={formData.address}
                   onChange={handleChange}
-                  placeholder="Any specific delivery instructions..."
-                  rows={3}
-                  className="w-full bg-transparent border-none text-sm text-gray-900 p-3 placeholder-gray-400 focus:outline-none focus:ring-0 resize-none"
+                  required
+                  error={errors.address}
                 />
+
+                <div className="space-y-1.5 group">
+                  <label className="text-xs uppercase tracking-wider text-gray-500 font-medium ml-1 flex items-center gap-2">
+                    <MessageCircle size={14} /> Notes (Optional)
+                  </label>
+                  <div className="relative flex items-center transition-all duration-200 bg-gray-50 border border-gray-300 hover:border-gray-400 focus-within:border-black focus-within:ring-1 focus-within:ring-black/20 rounded-lg overflow-hidden">
+                    <div className="pl-3 pr-2 text-gray-400">
+                      <MessageCircle size={16} />
+                    </div>
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      placeholder="Any specific delivery instructions..."
+                      rows={3}
+                      className="w-full bg-transparent border-none text-sm text-gray-900 p-3 placeholder-gray-400 focus:outline-none focus:ring-0 resize-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
           
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 bg-white p-8 rounded-xl border border-gray-200 shadow-lg">
-              <h2 className="text-2xl font-bold mb-6 border-b border-gray-200 pb-3 flex items-center gap-2">
-                <ShoppingBag size={20} /> Order Summary
-              </h2>
+          <div className="lg:col-span-1 mt-10" >
+            <div className="sticky top-24 bg-white p-8 rounded-2xl border border-gray-200 shadow-xl">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <ShoppingBag size={24} className="text-gray-700" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Order Summary</h2>
+                  <p className="text-sm text-gray-500">Review your order</p>
+                </div>
+              </div>
               
-              {/* Product Card */}
-              <div className="flex items-center border-b border-gray-200 pb-4 mb-4">
-                <div className="w-20 h-20 mr-4 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                  <ProductImage 
-                    src={product.images || product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-grow">
-                  <p className="font-semibold leading-tight text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {productPrice.toLocaleString()} DA
-                  </p>
-                </div>
+              {/* Product Info */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                <p className="font-bold text-lg leading-tight text-gray-900 mb-1">{product.name}</p>
+                <p className="text-2xl font-extrabold text-gray-900">
+                  {productPrice.toLocaleString()} <span className="text-sm font-normal text-gray-600">DA</span>
+                </p>
               </div>
 
               {/* Size Selection */}
               <div className="mb-6">
-                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-2 flex items-center gap-1">
+                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center gap-2">
                   <Package size={16} /> Select Size <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -549,10 +644,10 @@ export default function CheckoutPage() {
                           setErrors(prev => ({ ...prev, size: '' }))
                         }
                       }}
-                      className={`p-3 text-sm font-medium rounded-lg border transition-all ${
+                      className={`p-3 text-sm font-semibold rounded-lg border-2 transition-all ${
                         formData.size === size
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          ? 'bg-black text-white border-black shadow-md'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50'
                       }`}
                     >
                       {size}
@@ -564,10 +659,10 @@ export default function CheckoutPage() {
 
               {/* Color Selection */}
               <div className="mb-6">
-                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-2 flex items-center gap-1">
+                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-3 flex items-center gap-2">
                   <Palette size={16} /> Select Color <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {PRODUCT_COLORS.map(color => (
                     <button
                       key={color.value}
@@ -578,17 +673,17 @@ export default function CheckoutPage() {
                           setErrors(prev => ({ ...prev, color: '' }))
                         }
                       }}
-                      className={`p-3 text-sm font-medium rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                      className={`p-4 text-sm font-medium rounded-xl border-2 transition-all flex items-center justify-center gap-3 ${
                         formData.color === color.value
-                          ? 'border-black bg-gray-50'
-                          : 'border-gray-300 hover:border-gray-400'
+                          ? 'border-black bg-gray-50 shadow-md'
+                          : 'border-gray-300 hover:border-gray-400 hover:shadow-sm'
                       }`}
                     >
                       <div 
-                        className="w-6 h-6 rounded-full border border-gray-300"
+                        className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
                         style={{ backgroundColor: color.hex }}
                       />
-                      <span>{color.name}</span>
+                      <span className="font-semibold">{color.name}</span>
                     </button>
                   ))}
                 </div>
@@ -612,89 +707,93 @@ export default function CheckoutPage() {
 
               {/* Delivery Options */}
               <div className="mb-6">
-                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-2">
+                <label className="block text-xs uppercase tracking-wider text-gray-500 font-medium mb-3">
                   Delivery Method
                 </label>
-                {Object.entries(DELIVERY_OPTIONS).map(([key, option]) => {
-                  const Icon = option.icon
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => handleDeliveryChange(key as keyof typeof DELIVERY_OPTIONS)}
-                      className={`w-full text-left p-3 my-2 rounded-lg border transition-all ${
-                        selectedDelivery === key 
-                          ? 'bg-black text-white border-black' 
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Icon size={20} className="mr-3 flex-shrink-0" />
-                          <span className="font-semibold">{option.label}</span>
+                <div className="space-y-2">
+                  {Object.entries(DELIVERY_OPTIONS).map(([key, option]) => {
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleDeliveryChange(key as keyof typeof DELIVERY_OPTIONS)}
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                          selectedDelivery === key 
+                            ? 'bg-black text-white border-black shadow-lg' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-3">
+                            <Icon size={22} className="flex-shrink-0" />
+                            <span className="font-semibold text-base">{option.label}</span>
+                          </div>
+                          <span className={`text-base font-bold ${selectedDelivery === key ? 'text-white' : 'text-gray-900'}`}>
+                            + {option.price} DA
+                          </span>
                         </div>
-                        <span className={`text-sm font-bold ${selectedDelivery === key ? 'text-white' : 'text-gray-900'}`}>
-                          + {option.price} DA
-                        </span>
-                      </div>
-                      <p className={`text-xs mt-1 ${selectedDelivery === key ? 'text-gray-300' : 'text-gray-500'}`}>
-                        {option.description}
-                      </p>
-                    </button>
-                  )
-                })}
+                        <p className={`text-xs mt-2 ${selectedDelivery === key ? 'text-gray-300' : 'text-gray-500'}`}>
+                          {option.description}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Order Resume */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 className="font-bold text-sm mb-3 uppercase tracking-wider text-gray-700">Order Resume</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
+              <div className="mb-6 p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                <h3 className="font-bold text-sm mb-4 uppercase tracking-wider text-gray-700 flex items-center gap-2">
+                  <Package size={16} /> Order Resume
+                </h3>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Product:</span>
-                    <span className="font-medium">{product.name}</span>
+                    <span className="font-semibold text-gray-900">{product.name}</span>
                   </div>
                   {formData.size && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Size:</span>
-                      <span className="font-medium">{formData.size}</span>
+                      <span className="font-semibold text-gray-900">{formData.size}</span>
                     </div>
                   )}
                   {formData.color && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Color:</span>
-                      <span className="font-medium capitalize">{formData.color}</span>
+                      <span className="font-semibold text-gray-900 capitalize">{formData.color}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-gray-600">Quantity:</span>
-                    <span className="font-medium">{formData.quantity}</span>
+                    <span className="font-semibold text-gray-900">{formData.quantity}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-300">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-medium">{subtotal.toLocaleString()} DA</span>
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-300 mt-3">
+                    <span className="text-gray-700 font-medium">Subtotal:</span>
+                    <span className="font-bold text-gray-900">{subtotal.toLocaleString()} DA</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Delivery:</span>
-                    <span className="font-medium">{deliveryOption.price.toLocaleString()} DA</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700 font-medium">Delivery:</span>
+                    <span className="font-bold text-gray-900">{deliveryOption.price.toLocaleString()} DA</span>
                   </div>
                 </div>
               </div>
 
               {/* Total Price */}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200 mt-6 mb-6">
-                <span className="text-xl font-bold">Total</span>
-                <span className="text-3xl font-extrabold">{totalPrice.toLocaleString()} DA</span>
+              <div className="flex justify-between items-center pt-5 border-t-2 border-gray-300 mt-6 mb-6">
+                <span className="text-xl font-bold text-gray-900">Total</span>
+                <span className="text-3xl font-extrabold text-black">{totalPrice.toLocaleString()} <span className="text-lg font-normal text-gray-600">DA</span></span>
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
                 disabled={submitting || !formData.size || !formData.color}
-                className="w-full bg-black text-white h-14 rounded-xl font-bold text-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-black text-white h-14 rounded-xl font-bold text-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="animate-spin" /> Processing...
+                    <Loader2 className="animate-spin" size={20} /> Processing...
                   </>
                 ) : (
                   <>
@@ -703,13 +802,54 @@ export default function CheckoutPage() {
                 )}
               </button>
 
-              <p className="text-center text-xs text-gray-500 mt-3">
-                By placing an order, you agree to our Terms & Conditions.
+              <p className="text-center text-xs text-gray-500 mt-4 leading-relaxed">
+                By placing an order, you agree to our <span className="underline">Terms & Conditions</span>.
               </p>
             </div>
           </div>
         </form>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 mt-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center gap-4">
+            {/* Social Media Icons */}
+            <div className="flex items-center gap-6">
+              <a
+                href="https://www.instagram.com/dagger.ac/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-700 hover:text-gray-900 transition-colors"
+                aria-label="Instagram"
+              >
+                <Instagram size={24} />
+              </a>
+              <a
+                href="https://www.tiktok.com/@dagger.ac"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-700 hover:text-gray-900 transition-colors"
+                aria-label="TikTok"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+                </svg>
+              </a>
+              <a
+                href="mailto:dagger.ac.pro@gmail.com"
+                className="text-gray-700 hover:text-gray-900 transition-colors flex items-center gap-2"
+                aria-label="Email"
+              >
+                <Mail size={24} />
+                <span className="text-sm">dagger.ac.pro@gmail.com</span>
+              </a>
+            </div>
+            {/* Copyright */}
+            <p className="text-gray-600 text-sm">© {new Date().getFullYear()} The Dagger. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

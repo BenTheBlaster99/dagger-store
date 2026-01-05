@@ -854,6 +854,9 @@ function CheckoutContent() {
   )
 }
 
+// Force dynamic rendering to prevent static generation during build
+export const dynamic = 'force-dynamic'
+
 export default function CheckoutPage() {
   return (
     <Suspense fallback={

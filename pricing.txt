@@ -1,0 +1,178 @@
+#
+Wilaya
+À domicile
+1
+Adrar
+1 400,00 DA
+2
+Chlef
+850,00 DA
+3
+Laghouat
+950,00 DA
+4
+Oum El Bouaghi
+850,00 DA
+5
+Batna
+900,00 DA
+6
+Bejaia
+800,00 DA
+7
+Biskra
+950,00 DA
+8
+Bechar
+1 100,00 DA
+9
+Blida
+600,00 DA
+10
+Bouira
+700,00 DA
+11
+Tamanrasset
+1 600,00 DA
+12
+Tebessa
+900,00 DA
+13
+Tlemcen
+900,00 DA
+14
+Tiaret
+850,00 DA
+15
+Tizi Ouzou
+750,00 DA
+16
+Alger
+400,00 DA
+17
+Djelfa
+950,00 DA
+18
+Jijel
+900,00 DA
+19
+Setif
+800,00 DA
+20
+Saida
+900,00 DA
+21
+Skikda
+900,00 DA
+22
+Sidi Bel Abbes
+900,00 DA
+23
+Annaba
+850,00 DA
+24
+Guelma
+900,00 DA
+25
+Constantine
+800,00 DA
+26
+Medea
+800,00 DA
+27
+Mostaganem
+900,00 DA
+28
+M'Sila
+850,00 DA
+29
+Mascara
+900,00 DA
+30
+Ouargla
+950,00 DA
+31
+Oran
+800,00 DA
+32
+El Bayadh
+1 100,00 DA
+33
+Illizi
+0,0 DA
+34
+B. B. Arreridj
+800,00 DA
+35
+Boumerdes
+700,00 DA
+36
+El Tarf
+850,00 DA
+37
+Tindouf
+0,0 DA
+38
+Tissemsilt
+900,00 DA
+39
+El Oued
+950,00 DA
+40
+Khenchela
+900,00 DA
+41
+Souk Ahras
+900,00 DA
+42
+Tipaza
+700,00 DA
+43
+Mila
+900,00 DA
+44
+Ain Defla
+900,00 DA
+45
+Naama
+1 100,00 DA
+46
+Ain Temouchent
+900,00 DA
+47
+Ghardaia
+950,00 DA
+48
+Relizane
+900,00 DA
+49
+Timimoun
+1 400,00 DA
+50
+B. B. Mokhtar
+0,0 DA
+51
+Ouled Djellal
+950,00 DA
+52
+Beni Abbes
+1 100,00 DA
+53
+In Salah
+1 600,00 DA
+54
+In Guezzam
+1 600,00 DA
+55
+Touggourt
+950,00 DA
+56
+Djanet
+0,0 DA
+57
+El Meghaier
+950,00 DA
+58
+El Menia
+1 000,00 DA
+

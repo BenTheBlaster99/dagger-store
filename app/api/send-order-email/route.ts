@@ -1,8 +1,16 @@
-import { Resend } from "resend"
+import nodemailer from 'nodemailer'
 
 export async function POST(req: Request) {
-  if (!process.env.RESEND_API_KEY) {
-    return new Response("Missing RESEND_API_KEY", { status: 500 })
+  const smtpHost = process.env.SMTP_HOST
+  const smtpUser = process.env.SMTP_USER
+  const smtpPass = process.env.SMTP_PASS
+  const smtpPort = Number(process.env.SMTP_PORT || 587)
+  const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465
+  const fromEmail = process.env.SMTP_FROM || smtpUser
+  const toEmail = process.env.SMTP_TO || 'dagger.ac.pro@gmail.com'
+
+  if (!smtpHost || !smtpUser || !smtpPass || !fromEmail) {
+    return new Response('Missing SMTP configuration', { status: 500 })
   }
 
   try {
@@ -25,12 +33,19 @@ export async function POST(req: Request) {
       notes,
     } = orderData
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    })
 
-    // Send email using Resend
-    const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Dagger Store <onboarding@resend.dev>',
-      to: 'dagger.ac.pro@gmail.com',
+    const mailInfo = await transporter.sendMail({
+      from: fromEmail,
+      to: toEmail,
       subject: `New Order Received 🚀 - ${customer_name}`,
       html: `
         <!DOCTYPE html>
@@ -139,15 +154,7 @@ export async function POST(req: Request) {
       `,
     })
 
-    if (error) {
-      console.error('Resend error:', error)
-      return new Response(JSON.stringify({ error: 'Failed to send email', details: error }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    return Response.json({ success: true, data })
+    return Response.json({ success: true, messageId: mailInfo.messageId })
   } catch (error: any) {
     console.error('Email API error:', error)
     return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {

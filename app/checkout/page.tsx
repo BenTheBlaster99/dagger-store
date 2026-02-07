@@ -26,6 +26,7 @@ import {
 import { InputField } from '@/components/InputField'
 import { ProductImageGallery } from '@/components/ProductImageGallery'
 import { ALGERIA_WILAYAS, WILAYA_COMMUNES, PRODUCT_SIZES, PRODUCT_COLORS } from '@/lib/constants'
+import { DELIVERY_PRICES_BY_WILAYA, normalizeDeliveryKey } from '@/lib/deliveryPricing'
 import { LucideIcon } from 'lucide-react'
 
 // Delivery Options
@@ -45,6 +46,16 @@ const DELIVERY_OPTIONS = {
     wilaya_restriction: null,
   },
 }
+
+type DeliveryPricingEntry = {
+  bureau?: number
+  home?: number
+  handToHand?: number
+  base?: number
+}
+
+type DeliveryPricingMap = Record<string, DeliveryPricingEntry>
+
 
 // Select Field Component
 interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -132,6 +143,16 @@ function CheckoutContent() {
     }
   }, [productId])
 
+  const deliveryPricing = useMemo<DeliveryPricingMap>(() => {
+    return Object.entries(DELIVERY_PRICES_BY_WILAYA).reduce(
+      (acc, [key, price]) => {
+        acc[key] = { home: price, bureau: price, base: price }
+        return acc
+      },
+      {} as DeliveryPricingMap
+    )
+  }, [])
+
   async function fetchProduct() {
     try {
       const { data: productData, error: productError } = await supabase
@@ -165,6 +186,52 @@ function CheckoutContent() {
     [selectedDelivery]
   )
 
+  const pricingKey = useMemo(() => {
+    if (formData.wilaya) return normalizeDeliveryKey(formData.wilaya)
+    return ''
+  }, [formData.wilaya])
+
+  const pricingForTerritory = useMemo(() => {
+    if (!pricingKey) return undefined
+    return deliveryPricing[pricingKey]
+  }, [deliveryPricing, pricingKey])
+
+  const deliveryPrice = useMemo(() => {
+    if (selectedDelivery === 'BUREAU') {
+      if (!pricingKey) return null
+      return (
+        pricingForTerritory?.bureau ??
+        pricingForTerritory?.base ??
+        DELIVERY_OPTIONS.BUREAU.price
+      )
+    }
+    if (selectedDelivery === 'HAND_TO_HAND') {
+      return (
+        pricingForTerritory?.handToHand ??
+        DELIVERY_OPTIONS.HAND_TO_HAND.price
+      )
+    }
+    return DELIVERY_OPTIONS.BUREAU.price
+  }, [pricingForTerritory, pricingKey, selectedDelivery])
+
+  const getDisplayPriceForOption = (key: keyof typeof DELIVERY_OPTIONS) => {
+    if (key === 'BUREAU') {
+      if (!pricingKey) return null
+      return (
+        pricingForTerritory?.bureau ??
+        pricingForTerritory?.base ??
+        DELIVERY_OPTIONS.BUREAU.price
+      )
+    }
+    if (key === 'HAND_TO_HAND') {
+      return (
+        pricingForTerritory?.handToHand ??
+        DELIVERY_OPTIONS.HAND_TO_HAND.price
+      )
+    }
+    return DELIVERY_OPTIONS.BUREAU.price
+  }
+
   const wilayasForSelect = useMemo(() => {
     if (selectedDelivery === 'HAND_TO_HAND') {
       return ALGERIA_WILAYAS.filter(w => w.name === 'Algiers')
@@ -187,8 +254,8 @@ function CheckoutContent() {
   }, [productPrice, formData.quantity])
 
   const totalPrice = useMemo(() => {
-    return subtotal + deliveryOption.price
-  }, [subtotal, deliveryOption.price])
+    return subtotal + (deliveryPrice ?? 0)
+  }, [subtotal, deliveryPrice])
 
   // Handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -198,6 +265,9 @@ function CheckoutContent() {
     // Clear commune when wilaya changes
     if (name === 'wilaya') {
       setFormData(prev => ({ ...prev, commune: '' }))
+    }
+    if (name === 'commune') {
+      setErrors(prev => ({ ...prev, commune: '' }))
     }
     
     if (errors[name]) {
@@ -292,7 +362,7 @@ function CheckoutContent() {
       commune: formData.commune.trim(),
       notes: formData.notes.trim() || null,
       delivery_method: deliveryOption.label,
-      delivery_cost: Number(deliveryOption.price),
+      delivery_cost: Number(deliveryPrice ?? 0),
       total_price: Number(totalPrice),
       status: 'pending',
       size: formData.size || null,
@@ -364,7 +434,7 @@ function CheckoutContent() {
             wilaya: formData.wilaya,
             commune: formData.commune.trim(),
             delivery_method: deliveryOption.label,
-            delivery_cost: Number(deliveryOption.price),
+            delivery_cost: Number(deliveryPrice ?? 0),
             total_price: Number(totalPrice),
             product_name: product.name,
             quantity: Number(formData.quantity),
@@ -713,6 +783,7 @@ function CheckoutContent() {
                 <div className="space-y-2">
                   {Object.entries(DELIVERY_OPTIONS).map(([key, option]) => {
                     const Icon = option.icon
+                    const displayPrice = getDisplayPriceForOption(key as keyof typeof DELIVERY_OPTIONS)
                     return (
                       <button
                         key={key}
@@ -730,7 +801,7 @@ function CheckoutContent() {
                             <span className="font-semibold text-base">{option.label}</span>
                           </div>
                           <span className={`text-base font-bold ${selectedDelivery === key ? 'text-white' : 'text-gray-900'}`}>
-                            + {option.price} DA
+                            {displayPrice === null ? 'Select wilaya' : `+ ${displayPrice} DA`}
                           </span>
                         </div>
                         <p className={`text-xs mt-2 ${selectedDelivery === key ? 'text-gray-300' : 'text-gray-500'}`}>
@@ -774,7 +845,9 @@ function CheckoutContent() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700 font-medium">Delivery:</span>
-                    <span className="font-bold text-gray-900">{deliveryOption.price.toLocaleString()} DA</span>
+                    <span className="font-bold text-gray-900">
+                      {deliveryPrice === null ? 'Select wilaya' : `${deliveryPrice.toLocaleString()} DA`}
+                    </span>
                   </div>
                 </div>
               </div>

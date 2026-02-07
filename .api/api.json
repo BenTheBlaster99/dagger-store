@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "zrexpress-api",
+      "source": "@zrexpress-api/v1.0#550xp8lmkeinjpr",
+      "integrity": "sha512-Xd2UR93rH0KqfLxtcerrPFaockp0EGQvEX51QfYjVb4A85Drs5FhpJN7ygxwQZSg4WgbPdLD7MXygKx1TOj/Cw==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}

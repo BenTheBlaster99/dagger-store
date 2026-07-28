@@ -32,6 +32,7 @@ import {
   trackPurchase,
   trackViewContent,
 } from '@/lib/meta-pixel'
+import { getProductPricing, isProductPurchasable } from '@/lib/product-pricing'
 import { LucideIcon } from 'lucide-react'
 
 // Delivery Options
@@ -180,7 +181,6 @@ function CheckoutContent() {
         .from('product_variant')
         .select('*')
         .eq('product_id', productId)
-        .gt('stock', 0)
 
       if (variantsError) throw variantsError
 
@@ -196,11 +196,12 @@ function CheckoutContent() {
   useEffect(() => {
     if (!product || pixelTracked) return
 
+    const pricing = getProductPricing(product)
     const content = {
       content_ids: [String(product.id)],
       content_name: product.name,
       content_type: 'product',
-      value: Number(product.base_price || 0),
+      value: pricing.price,
       currency: 'DZD',
       num_items: 1,
     }
@@ -285,10 +286,68 @@ function CheckoutContent() {
     return WILAYA_COMMUNES[formData.wilaya] || []
   }, [formData.wilaya])
 
-  const productPrice = useMemo(() => {
-    if (!product) return 0
-    return product.base_price || 0
+  const productPricing = useMemo(() => {
+    if (!product) return { base: 0, price: 0, onSale: false, discountPercent: 0, salePrice: null }
+    return getProductPricing(product)
   }, [product])
+
+  const productPrice = productPricing.price
+
+  const availableSizes = useMemo(() => {
+    const fromVariants = Array.from(
+      new Set(
+        variants
+          .filter((v) => Number(v.stock || 0) > 0)
+          .map((v) => v.size)
+          .filter(Boolean)
+      )
+    ) as string[]
+    return fromVariants.length > 0 ? fromVariants : PRODUCT_SIZES
+  }, [variants])
+
+  const availableColors = useMemo(() => {
+    const fromVariants = Array.from(
+      new Set(
+        variants
+          .filter((v) => {
+            if (Number(v.stock || 0) <= 0) return false
+            if (formData.size && v.size && v.size !== formData.size) return false
+            return Boolean(v.color)
+          })
+          .map((v) => v.color)
+          .filter(Boolean)
+      )
+    ) as string[]
+
+    if (fromVariants.length > 0) {
+      return fromVariants.map((color) => ({
+        name: color,
+        value: color.toLowerCase(),
+        hex:
+          PRODUCT_COLORS.find((c) => c.value === color.toLowerCase() || c.name === color)?.hex ||
+          '#888888',
+      }))
+    }
+    return PRODUCT_COLORS
+  }, [variants, formData.size])
+
+  const selectedVariantStock = useMemo(() => {
+    if (!formData.size && !formData.color) return null
+    const match = variants.find((v) => {
+      const sizeOk = !formData.size || !v.size || v.size === formData.size
+      const colorOk =
+        !formData.color ||
+        !v.color ||
+        v.color.toLowerCase() === formData.color.toLowerCase()
+      return sizeOk && colorOk
+    })
+    return match ? Number(match.stock || 0) : null
+  }, [variants, formData.size, formData.color])
+
+  const productSoldOut = useMemo(() => {
+    if (!product) return true
+    return !isProductPurchasable(product, variants)
+  }, [product, variants])
 
   const subtotal = useMemo(() => {
     return productPrice * formData.quantity
@@ -306,6 +365,9 @@ function CheckoutContent() {
     // Clear commune when wilaya changes
     if (name === 'wilaya') {
       setFormData(prev => ({ ...prev, commune: '' }))
+    }
+    if (name === 'size') {
+      setFormData(prev => ({ ...prev, color: '' }))
     }
     if (name === 'commune') {
       setErrors(prev => ({ ...prev, commune: '' }))
@@ -388,6 +450,21 @@ function CheckoutContent() {
 
     if (!product.id) {
       setErrors({ general: 'Product ID is missing' })
+      return
+    }
+
+    if (productSoldOut) {
+      setErrors({ general: 'This product is sold out.' })
+      return
+    }
+
+    if (
+      selectedVariantStock !== null &&
+      Number(formData.quantity) > selectedVariantStock
+    ) {
+      setErrors({
+        quantity: `Only ${selectedVariantStock} left for this size/color`,
+      })
       return
     }
 
@@ -477,6 +554,22 @@ function CheckoutContent() {
         throw new Error(`Order item creation failed: ${itemError.message}`)
       }
 
+      // Decrement stock for matching size/color variant
+      try {
+        await fetch('/api/adjust-stock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: product.id,
+            quantity: Number(formData.quantity),
+            size: formData.size || null,
+            color: formData.color || null,
+          }),
+        })
+      } catch (stockError) {
+        console.error('Stock decrement failed:', stockError)
+      }
+
       // WhatsApp + optional email (failures must not fail the order)
       try {
         await fetch('/api/notify-order', {
@@ -510,6 +603,24 @@ function CheckoutContent() {
         product_id: String(product.id),
         product_name: product.name,
       })
+      try {
+        const sid = localStorage.getItem('dagger_sid')
+        if (sid) {
+          await fetch('/api/analytics/collect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              session_id: sid,
+              path: typeof window !== 'undefined' ? window.location.pathname : '/checkout',
+              converted: true,
+              pageview: false,
+              heartbeat: true,
+            }),
+          })
+        }
+      } catch {
+        // ignore analytics failure
+      }
       setOrderSuccess(true)
     } catch (error: any) {
       const errorMessage = error.message || 'An unexpected error occurred. Please try again.'
@@ -754,9 +865,33 @@ function CheckoutContent() {
               {/* Product Info */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
                 <p className="font-bold text-lg leading-tight text-gray-900 mb-1">{product.name}</p>
-                <p className="text-2xl font-extrabold text-gray-900">
-                  {productPrice.toLocaleString()} <span className="text-sm font-normal text-gray-600">DA</span>
-                </p>
+                {productPricing.onSale ? (
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="text-2xl font-extrabold text-gray-900">
+                      {productPrice.toLocaleString()}{' '}
+                      <span className="text-sm font-normal text-gray-600">DA</span>
+                    </p>
+                    <span className="text-sm text-gray-400 line-through">
+                      {productPricing.base.toLocaleString()} DA
+                    </span>
+                    <span className="text-xs font-bold text-[#E5525F]">
+                      -{productPricing.discountPercent}%
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-2xl font-extrabold text-gray-900">
+                    {productPrice.toLocaleString()}{' '}
+                    <span className="text-sm font-normal text-gray-600">DA</span>
+                  </p>
+                )}
+                {productSoldOut && (
+                  <p className="text-sm text-red-600 font-medium mt-2">Sold out</p>
+                )}
+                {selectedVariantStock !== null && selectedVariantStock > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedVariantStock} in stock for this option
+                  </p>
+                )}
               </div>
 
               {/* Size Selection */}
@@ -765,12 +900,12 @@ function CheckoutContent() {
                   <Package size={16} /> Select Size <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {PRODUCT_SIZES.map(size => (
+                  {availableSizes.map(size => (
                     <button
                       key={size}
                       type="button"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, size }))
+                        setFormData(prev => ({ ...prev, size, color: '' }))
                         if (errors.size) {
                           setErrors(prev => ({ ...prev, size: '' }))
                         }
@@ -794,7 +929,7 @@ function CheckoutContent() {
                   <Palette size={16} /> Select Color <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {PRODUCT_COLORS.map(color => (
+                  {availableColors.map(color => (
                     <button
                       key={color.value}
                       type="button"
@@ -830,10 +965,12 @@ function CheckoutContent() {
                   type="number"
                   name="quantity"
                   min="1"
+                  max={selectedVariantStock || undefined}
                   value={formData.quantity}
                   onChange={handleChange}
                   className="w-full bg-gray-50 border border-gray-300 text-gray-900 p-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-black focus:border-black"
                 />
+                {errors.quantity && <p className="mt-2 text-xs text-red-500">{errors.quantity}</p>}
               </div>
 
               {/* Delivery Options */}
@@ -922,7 +1059,7 @@ function CheckoutContent() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={submitting || !formData.size || !formData.color}
+                disabled={submitting || productSoldOut || !formData.size || !formData.color}
                 className="w-full bg-black text-white h-14 rounded-xl font-bold text-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {submitting ? (

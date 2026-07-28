@@ -6,6 +6,11 @@ import Link from 'next/link'
 import { ProductCardGallery } from '@/components/ProductCardGallery'
 import { Menu, X, Instagram, Mail } from 'lucide-react'
 import Image from 'next/image'
+import {
+  getProductPricing,
+  getTotalStock,
+  isProductPurchasable,
+} from '@/lib/product-pricing'
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -17,7 +22,8 @@ export default function Home() {
     async function fetchProducts() {
       const { data, error: fetchError } = await supabase
         .from('Products')
-        .select('*')
+        .select('*, product_variant(*)')
+        .or('is_active.is.null,is_active.eq.true')
       
       if (fetchError) {
         setError(fetchError.message)
@@ -130,7 +136,14 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map(product => (
+            {products.map(product => {
+              const pricing = getProductPricing(product)
+              const variants = product.product_variant || []
+              const stock = getTotalStock(variants)
+              const canBuy = isProductPurchasable(product, variants)
+              const soldOut = !canBuy
+
+              return (
               <div key={product.id} className="group bg-white rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-300 border border-gray-200 hover:border-gray-300">
                 {/* Product Image */}
                 <div className="relative overflow-hidden">
@@ -138,6 +151,16 @@ export default function Home() {
                     images={Array.isArray(product.images) ? product.images : product.image ? [product.image] : []}
                     alt={product.name}
                   />
+                  {pricing.onSale && (
+                    <span className="absolute top-3 left-3 z-10 bg-[#E5525F] text-white text-xs font-bold px-2.5 py-1">
+                      -{pricing.discountPercent}%
+                    </span>
+                  )}
+                  {soldOut && (
+                    <span className="absolute top-3 right-3 z-10 bg-black text-white text-xs font-bold px-2.5 py-1">
+                      Sold out
+                    </span>
+                  )}
                 </div>
                 {/* Product Info */}
                 <div className="p-6 space-y-4">
@@ -153,19 +176,46 @@ export default function Home() {
                   
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <div>
-                      <span className="text-3xl font-extrabold text-gray-900">{product.base_price.toLocaleString()}</span>
-                      <span className="text-gray-500 text-sm ml-1">DA</span>
+                      {pricing.onSale ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-extrabold text-gray-900">
+                            {pricing.price.toLocaleString()}
+                          </span>
+                          <span className="text-gray-500 text-sm">DA</span>
+                          <span className="text-gray-400 line-through text-sm">
+                            {pricing.base.toLocaleString()} DA
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-3xl font-extrabold text-gray-900">
+                            {pricing.base.toLocaleString()}
+                          </span>
+                          <span className="text-gray-500 text-sm ml-1">DA</span>
+                        </>
+                      )}
+                      {!soldOut && stock > 0 && stock <= 5 && (
+                        <p className="text-xs text-[#E5525F] mt-1 font-medium">
+                          Only {stock} left
+                        </p>
+                      )}
                     </div>
-                    <Link 
-                      href={`/checkout?product=${product.id}`}
-                      className="bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
-                    >
-                      Order Now
-                    </Link>
+                    {soldOut ? (
+                      <span className="bg-gray-200 text-gray-500 px-6 py-3 rounded-lg font-semibold cursor-not-allowed">
+                        Sold Out
+                      </span>
+                    ) : (
+                      <Link 
+                        href={`/checkout?product=${product.id}`}
+                        className="bg-black text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                      >
+                        Order Now
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </section>

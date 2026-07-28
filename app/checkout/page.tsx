@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -27,6 +27,11 @@ import { InputField } from '@/components/InputField'
 import { ProductImageGallery } from '@/components/ProductImageGallery'
 import { ALGERIA_WILAYAS, WILAYA_COMMUNES, PRODUCT_SIZES, PRODUCT_COLORS } from '@/lib/constants'
 import { DELIVERY_PRICES_BY_WILAYA, normalizeDeliveryKey } from '@/lib/deliveryPricing'
+import {
+  trackInitiateCheckout,
+  trackPurchase,
+  trackViewContent,
+} from '@/lib/meta-pixel'
 import { LucideIcon } from 'lucide-react'
 
 // Delivery Options
@@ -120,7 +125,15 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [completedOrder, setCompletedOrder] = useState<{
+    total_price: number
+    quantity: number
+    product_id: string
+    product_name: string
+  } | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [pixelTracked, setPixelTracked] = useState(false)
+  const purchaseTracked = useRef(false)
   
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -179,6 +192,34 @@ function CheckoutContent() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!product || pixelTracked) return
+
+    const content = {
+      content_ids: [String(product.id)],
+      content_name: product.name,
+      content_type: 'product',
+      value: Number(product.base_price || 0),
+      currency: 'DZD',
+      num_items: 1,
+    }
+    trackViewContent(content)
+    trackInitiateCheckout(content)
+    setPixelTracked(true)
+  }, [product, pixelTracked])
+
+  useEffect(() => {
+    if (!orderSuccess || !completedOrder || purchaseTracked.current) return
+    purchaseTracked.current = true
+    trackPurchase({
+      content_ids: [completedOrder.product_id],
+      content_name: completedOrder.product_name,
+      value: completedOrder.total_price,
+      currency: 'DZD',
+      num_items: completedOrder.quantity,
+    })
+  }, [orderSuccess, completedOrder])
 
   // Computed values
   const deliveryOption = useMemo(() => 
@@ -353,10 +394,12 @@ function CheckoutContent() {
     setSubmitting(true)
     setErrors({}) // Clear previous errors
 
+    const phone = formData.phone.trim().replace(/\s/g, '')
+
     // Prepare order data
     const orderData = {
       customer_name: formData.customer_name.trim(),
-      phone: formData.phone.trim().replace(/\s/g, ''),
+      phone,
       address: formData.address.trim(),
       wilaya: formData.wilaya,
       commune: formData.commune.trim(),
@@ -380,6 +423,20 @@ function CheckoutContent() {
     }
 
     try {
+      const { data: banRow, error: banError } = await supabase
+        .from('banned_customers')
+        .select('phone')
+        .eq('phone', phone)
+        .maybeSingle()
+
+      if (banError && !banError.message.includes('Could not find the table')) {
+        throw new Error(`Ban check failed: ${banError.message}`)
+      }
+
+      if (banRow) {
+        throw new Error('This phone number cannot place orders. Please contact support.')
+      }
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -404,7 +461,7 @@ function CheckoutContent() {
       // Create order item
       orderItemData.order_id = order.id
       
-      const { data: orderItem, error: itemError } = await supabase
+      const { error: itemError } = await supabase
         .from('order_items')
         .insert(orderItemData)
         .select()
@@ -420,16 +477,16 @@ function CheckoutContent() {
         throw new Error(`Order item creation failed: ${itemError.message}`)
       }
 
-      // Send email notification
+      // WhatsApp + optional email (failures must not fail the order)
       try {
-        await fetch('/api/send-order-email', {
+        await fetch('/api/notify-order', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             customer_name: formData.customer_name.trim(),
-            phone: formData.phone.trim().replace(/\s/g, ''),
+            phone,
             address: formData.address.trim(),
             wilaya: formData.wilaya,
             commune: formData.commune.trim(),
@@ -443,12 +500,16 @@ function CheckoutContent() {
             notes: formData.notes.trim() || null,
           }),
         })
-        // Email sent successfully (we don't show error to user if email fails)
-      } catch (emailError) {
-        // Log error but don't fail the order
-        console.error('Failed to send order email:', emailError)
+      } catch (notifyError) {
+        console.error('Failed to send order notification:', notifyError)
       }
 
+      setCompletedOrder({
+        total_price: Number(totalPrice),
+        quantity: Number(formData.quantity),
+        product_id: String(product.id),
+        product_name: product.name,
+      })
       setOrderSuccess(true)
     } catch (error: any) {
       const errorMessage = error.message || 'An unexpected error occurred. Please try again.'

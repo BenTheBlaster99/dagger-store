@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { Bebas_Neue, Outfit, Cinzel } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const bebas = Bebas_Neue({
+  variable: "--font-bebas",
   subsets: ["latin"],
+  weight: "400",
 });
 
 const cinzel = Cinzel({
@@ -22,8 +24,8 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
-  title: "The Dagger - Premium Streetwear",
-  description: "Discover our premium collection of streetwear designed for those who demand quality.",
+  title: "The Dagger — Premium Streetwear",
+  description: "Born in Shadows. Worn in Light. Limited streetwear drops by Dagger.AC.",
 };
 
 export default function RootLayout({
@@ -37,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
+        className={`${outfit.variable} ${bebas.variable} ${cinzel.variable} antialiased`}
       >
         {pixelId ? (
           <>

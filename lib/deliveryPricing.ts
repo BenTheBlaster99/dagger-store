@@ -1,68 +1,85 @@
-type WilayaPriceEntry = {
+export type WilayaTarif = {
+  code: number
   wilaya: string
-  price: number
+  home: number
+  bureau: number
   aliases?: string[]
 }
 
-const RAW_DELIVERY_PRICES: WilayaPriceEntry[] = [
-  { wilaya: 'Adrar', price: 1400 },
-  { wilaya: 'Chlef', price: 850 },
-  { wilaya: 'Laghouat', price: 950 },
-  { wilaya: 'Oum El Bouaghi', price: 850 },
-  { wilaya: 'Batna', price: 900 },
-  { wilaya: 'Bejaia', price: 800 },
-  { wilaya: 'Biskra', price: 950 },
-  { wilaya: 'Bechar', price: 1100 },
-  { wilaya: 'Blida', price: 600 },
-  { wilaya: 'Bouira', price: 700 },
-  { wilaya: 'Tamanrasset', price: 1600 },
-  { wilaya: 'Tebessa', price: 900 },
-  { wilaya: 'Tlemcen', price: 900 },
-  { wilaya: 'Tiaret', price: 850 },
-  { wilaya: 'Tizi Ouzou', price: 750 },
-  { wilaya: 'Alger', price: 400, aliases: ['Algiers'] },
-  { wilaya: 'Djelfa', price: 950 },
-  { wilaya: 'Jijel', price: 900 },
-  { wilaya: 'Setif', price: 800 },
-  { wilaya: 'Saida', price: 900 },
-  { wilaya: 'Skikda', price: 900 },
-  { wilaya: 'Sidi Bel Abbes', price: 900 },
-  { wilaya: 'Annaba', price: 850 },
-  { wilaya: 'Guelma', price: 900 },
-  { wilaya: 'Constantine', price: 800 },
-  { wilaya: 'Medea', price: 800 },
-  { wilaya: 'Mostaganem', price: 900 },
-  { wilaya: "M'Sila", price: 850 },
-  { wilaya: 'Mascara', price: 900 },
-  { wilaya: 'Ouargla', price: 950 },
-  { wilaya: 'Oran', price: 800 },
-  { wilaya: 'El Bayadh', price: 1100 },
-  { wilaya: 'Illizi', price: 0 },
-  { wilaya: 'Bordj Bou Arreridj', price: 800, aliases: ['B. B. Arreridj'] },
-  { wilaya: 'Boumerdes', price: 700 },
-  { wilaya: 'El Tarf', price: 850 },
-  { wilaya: 'Tindouf', price: 0 },
-  { wilaya: 'Tissemsilt', price: 900 },
-  { wilaya: 'El Oued', price: 950 },
-  { wilaya: 'Khenchela', price: 900 },
-  { wilaya: 'Souk Ahras', price: 900 },
-  { wilaya: 'Tipaza', price: 700 },
-  { wilaya: 'Mila', price: 900 },
-  { wilaya: 'Ain Defla', price: 900 },
-  { wilaya: 'Naama', price: 1100 },
-  { wilaya: 'Ain Temouchent', price: 900 },
-  { wilaya: 'Ghardaia', price: 950 },
-  { wilaya: 'Relizane', price: 900 },
-  { wilaya: 'Timimoun', price: 1400 },
-  { wilaya: 'Bordj Badji Mokhtar', price: 0, aliases: ['B. B. Mokhtar', 'Bordj Baji Mokhtar'] },
-  { wilaya: 'Ouled Djellal', price: 950 },
-  { wilaya: 'Beni Abbes', price: 1100 },
-  { wilaya: 'In Salah', price: 1600 },
-  { wilaya: 'In Guezzam', price: 1600 },
-  { wilaya: 'Touggourt', price: 950 },
-  { wilaya: 'Djanet', price: 0 },
-  { wilaya: 'El Meghaier', price: 950, aliases: ["El M'Ghair"] },
-  { wilaya: 'El Menia', price: 1000 },
+const ALIASES: Record<string, string[]> = {
+  Alger: ['Algiers'],
+  Bejaia: ['Béjaïa'],
+  Bechar: ['Béchar'],
+  Setif: ['Sétif'],
+  Tebessa: ['Tébessa'],
+  'Bordj Bou Arreridj': ['Bordj Bou Arréridj', 'B. B. Arreridj'],
+  'El Meghaier': ["El M'Ghair"],
+  Medea: ['Médéa'],
+  Boumerdes: ['Boumerdès'],
+  'Ain Defla': ['Aïn Defla'],
+  'Ain Temouchent': ['Aïn Témouchent'],
+  'El Menia': ["El Meniaa", "El Ménia"],
+}
+
+export const WILAYA_TARIFS: WilayaTarif[] = [
+  { code: 1, wilaya: 'Adrar', home: 1100, bureau: 750 },
+  { code: 2, wilaya: 'Chlef', home: 680, bureau: 400 },
+  { code: 3, wilaya: 'Laghouat', home: 880, bureau: 550 },
+  { code: 4, wilaya: 'Oum El Bouaghi', home: 700, bureau: 350 },
+  { code: 5, wilaya: 'Batna', home: 700, bureau: 400 },
+  { code: 6, wilaya: 'Bejaia', home: 700, bureau: 400 },
+  { code: 7, wilaya: 'Biskra', home: 950, bureau: 620 },
+  { code: 8, wilaya: 'Bechar', home: 1100, bureau: 720 },
+  { code: 9, wilaya: 'Blida', home: 500, bureau: 350 },
+  { code: 10, wilaya: 'Bouira', home: 700, bureau: 520 },
+  { code: 11, wilaya: 'Tamanrasset', home: 1600, bureau: 1120 },
+  { code: 12, wilaya: 'Tebessa', home: 900, bureau: 570 },
+  { code: 13, wilaya: 'Tlemcen', home: 900, bureau: 570 },
+  { code: 14, wilaya: 'Tiaret', home: 850, bureau: 520 },
+  { code: 15, wilaya: 'Tizi Ouzou', home: 630, bureau: 400 },
+  { code: 16, wilaya: 'Alger', home: 450, bureau: 200 },
+  { code: 17, wilaya: 'Djelfa', home: 950, bureau: 570 },
+  { code: 18, wilaya: 'Jijel', home: 900, bureau: 520 },
+  { code: 19, wilaya: 'Sétif', home: 690, bureau: 400 },
+  { code: 20, wilaya: 'Saida', home: 900, bureau: 570 },
+  { code: 21, wilaya: 'Skikda', home: 900, bureau: 520 },
+  { code: 22, wilaya: 'Sidi Bel Abbès', home: 900, bureau: 520 },
+  { code: 23, wilaya: 'Annaba', home: 700, bureau: 400 },
+  { code: 24, wilaya: 'Guelma', home: 900, bureau: 520 },
+  { code: 25, wilaya: 'Constantine', home: 680, bureau: 400 },
+  { code: 26, wilaya: 'Medea', home: 800, bureau: 520 },
+  { code: 27, wilaya: 'Mostaganem', home: 900, bureau: 520 },
+  { code: 28, wilaya: 'M\'Sila', home: 850, bureau: 570 },
+  { code: 29, wilaya: 'Mascara', home: 900, bureau: 520 },
+  { code: 30, wilaya: 'Ouargla', home: 950, bureau: 670 },
+  { code: 31, wilaya: 'Oran', home: 580, bureau: 380 },
+  { code: 32, wilaya: 'El Bayadh', home: 1100, bureau: 670 },
+  { code: 33, wilaya: 'Illizi', home: 1700, bureau: 1200 },
+  { code: 34, wilaya: 'Bordj Bou Arreridj', home: 800, bureau: 520 },
+  { code: 35, wilaya: 'Boumerdes', home: 550, bureau: 350 },
+  { code: 36, wilaya: 'El Tarf', home: 850, bureau: 520 },
+  { code: 37, wilaya: 'Tindouf', home: 1350, bureau: 900 },
+  { code: 38, wilaya: 'Tissemsilt', home: 900, bureau: 520 },
+  { code: 39, wilaya: 'El Oued', home: 950, bureau: 670 },
+  { code: 40, wilaya: 'Khenchela', home: 900, bureau: 520 },
+  { code: 41, wilaya: 'Souk Ahras', home: 900, bureau: 520 },
+  { code: 42, wilaya: 'Tipaza', home: 550, bureau: 350 },
+  { code: 43, wilaya: 'Mila', home: 900, bureau: 520 },
+  { code: 44, wilaya: 'Ain Defla', home: 900, bureau: 520 },
+  { code: 45, wilaya: 'Naama', home: 1100, bureau: 670 },
+  { code: 46, wilaya: 'Ain Temouchent', home: 900, bureau: 520 },
+  { code: 47, wilaya: 'Ghardaia', home: 950, bureau: 620 },
+  { code: 48, wilaya: 'Relizane', home: 900, bureau: 520 },
+  { code: 49, wilaya: 'Timimoun', home: 1400, bureau: 1000 },
+  { code: 50, wilaya: 'Bordj Badji Mokhtar', home: 0, bureau: 0 },
+  { code: 51, wilaya: 'Ouled Djellal', home: 950, bureau: 620 },
+  { code: 52, wilaya: 'Béni Abbès', home: 1100, bureau: 970 },
+  { code: 53, wilaya: 'In Salah', home: 1600, bureau: 1100 },
+  { code: 54, wilaya: 'In Guezzam', home: 0, bureau: 0 },
+  { code: 55, wilaya: 'Touggourt', home: 950, bureau: 670 },
+  { code: 56, wilaya: 'Djanet', home: 2400, bureau: 1750 },
+  { code: 57, wilaya: 'M\'Ghair', home: 950, bureau: 0 },
+  { code: 58, wilaya: 'Meniaa', home: 1000, bureau: 550 },
 ]
 
 export function normalizeDeliveryKey(value: string) {
@@ -76,17 +93,32 @@ export function normalizeDeliveryKey(value: string) {
     .trim()
 }
 
-export const DELIVERY_PRICES_BY_WILAYA = RAW_DELIVERY_PRICES.reduce(
+export type DeliveryPricingEntry = {
+  home: number
+  bureau: number
+  base: number
+  wilaya: string
+}
+
+export const DELIVERY_PRICES_BY_WILAYA = WILAYA_TARIFS.reduce(
   (acc, entry) => {
-    const key = normalizeDeliveryKey(entry.wilaya)
-    acc[key] = entry.price
-    if (entry.aliases) {
-      entry.aliases.forEach(alias => {
-        acc[normalizeDeliveryKey(alias)] = entry.price
-      })
+    const payload: DeliveryPricingEntry = {
+      home: entry.home,
+      bureau: entry.bureau,
+      base: entry.home,
+      wilaya: entry.wilaya,
+    }
+    const keys = [entry.wilaya, ...(ALIASES[entry.wilaya] || [])]
+    for (const key of keys) {
+      acc[normalizeDeliveryKey(key)] = payload
     }
     return acc
   },
-  {} as Record<string, number>
+  {} as Record<string, DeliveryPricingEntry>
 )
 
+export function getWilayaDelivery(wilaya: string, method: 'home' | 'bureau' = 'home') {
+  const entry = DELIVERY_PRICES_BY_WILAYA[normalizeDeliveryKey(wilaya)]
+  if (!entry) return null
+  return method === 'bureau' ? entry.bureau : entry.home
+}

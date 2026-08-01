@@ -8,6 +8,8 @@ import {
   Trash2,
   RefreshCw,
   X,
+  ImagePlus,
+  Upload,
 } from 'lucide-react'
 import { AdminNav } from '@/components/AdminNav'
 import {
@@ -48,7 +50,7 @@ const emptyForm = {
   category: 'T-Shirt',
   base_price: '',
   coupon_price: '',
-  images_text: '',
+  images: [] as string[],
   sold_out: false,
   is_active: true,
 }
@@ -74,6 +76,7 @@ export default function AdminProductsPage() {
     newVariant({ size: 'M', color: 'Black', stock: 10 }),
     newVariant({ size: 'L', color: 'Black', stock: 10 }),
   ])
+  const [uploading, setUploading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -124,7 +127,7 @@ export default function AdminProductsPage() {
         product.coupon_price === null || product.coupon_price === undefined
           ? ''
           : String(product.coupon_price),
-      images_text: (product.images || []).join('\n'),
+      images: Array.isArray(product.images) ? [...product.images] : [],
       sold_out: Boolean(product.sold_out),
       is_active: product.is_active !== false,
     })
@@ -154,7 +157,7 @@ export default function AdminProductsPage() {
       category: form.category,
       base_price: Number(form.base_price),
       coupon_price: form.coupon_price === '' ? null : Number(form.coupon_price),
-      images_text: form.images_text,
+      images: form.images,
       sold_out: form.sold_out,
       is_active: form.is_active,
       variants: variants.map((v) => ({
@@ -194,6 +197,48 @@ export default function AdminProductsPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed')
     }
+  }
+
+  async function handleImageUpload(files: FileList | null) {
+    if (!files || files.length === 0) return
+    setUploading(true)
+    setError('')
+    try {
+      const uploaded: string[] = []
+      for (const file of Array.from(files)) {
+        const body = new FormData()
+        body.append('file', file)
+        body.append('folder', editingId || 'drafts')
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body,
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || `Failed to upload ${file.name}`)
+        uploaded.push(data.url)
+      }
+      setForm((f) => ({ ...f, images: [...f.images, ...uploaded] }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function removeImage(url: string) {
+    setForm((f) => ({ ...f, images: f.images.filter((img) => img !== url) }))
+  }
+
+  function moveImage(url: string, direction: -1 | 1) {
+    setForm((f) => {
+      const list = [...f.images]
+      const idx = list.indexOf(url)
+      if (idx < 0) return f
+      const next = idx + direction
+      if (next < 0 || next >= list.length) return f
+      ;[list[idx], list[next]] = [list[next], list[idx]]
+      return { ...f, images: list }
+    })
   }
 
   function fillSizeColorGrid() {
@@ -311,18 +356,87 @@ export default function AdminProductsPage() {
               />
             </label>
 
-            <label className="block space-y-1 text-sm">
-              <span className="text-xs uppercase text-neutral-500">
-                Image URLs (one per line)
-              </span>
-              <textarea
-                rows={3}
-                value={form.images_text}
-                onChange={(e) => setForm((f) => ({ ...f, images_text: e.target.value }))}
-                placeholder="https://...jpg"
-                className="w-full border border-neutral-300 px-3 py-2 font-mono text-xs"
-              />
-            </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs uppercase text-neutral-500">Images</span>
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-neutral-300 text-sm cursor-pointer hover:bg-neutral-50">
+                  {uploading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                  {uploading ? 'Uploading…' : 'Upload images'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                    multiple
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      void handleImageUpload(e.target.files)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+
+              {form.images.length === 0 ? (
+                <div className="border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+                  <ImagePlus size={20} className="mx-auto mb-2 text-neutral-400" />
+                  Upload product photos (JPG/PNG/WEBP, max 8MB each).
+                  First image is the main storefront photo.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {form.images.map((url, idx) => (
+                    <div
+                      key={url}
+                      className="relative border border-neutral-200 bg-neutral-50 aspect-square overflow-hidden"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Product ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {idx === 0 && (
+                        <span className="absolute top-1 left-1 bg-black text-white text-[10px] px-1.5 py-0.5">
+                          Main
+                        </span>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1 bg-black/55">
+                        <button
+                          type="button"
+                          onClick={() => moveImage(url, -1)}
+                          disabled={idx === 0}
+                          className="flex-1 text-[10px] text-white disabled:opacity-40"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveImage(url, 1)}
+                          disabled={idx === form.images.length - 1}
+                          className="flex-1 text-[10px] text-white disabled:opacity-40"
+                        >
+                          →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(url)}
+                          className="flex-1 text-[10px] text-red-200"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-neutral-500">
+                Images upload to Supabase Storage and are saved on the product when you click Save.
+              </p>
+            </div>
 
             <div className="flex flex-wrap gap-4 text-sm">
               <label className="inline-flex items-center gap-2">
@@ -434,10 +548,10 @@ export default function AdminProductsPage() {
 
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploading}
               className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm disabled:opacity-60"
             >
-              {saving && <Loader2 size={14} className="animate-spin" />}
+              {(saving || uploading) && <Loader2 size={14} className="animate-spin" />}
               {editingId ? 'Save changes' : 'Create product'}
             </button>
           </form>

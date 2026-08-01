@@ -134,7 +134,7 @@ function ProductPageContent() {
 
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-2 lg:items-start lg:gap-10 lg:py-10">
         {/* Left: gallery + product details */}
-        <div className="space-y-5 lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2">
+        <div className="space-y-5">
           <div className="relative aspect-square max-h-[min(58vh,560px)] w-full overflow-hidden rounded-md bg-surface-2 lg:aspect-auto lg:h-[min(52vh,520px)]">
             {images[activeImage] ? (
               <Image
@@ -259,7 +259,7 @@ function ProductPageContent() {
         </div>
 
         {/* Right: order form */}
-        <div className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pl-2">
+        <div>
           {canBuy ? (
             <OrderForm
               product={product}

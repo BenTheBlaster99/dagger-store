@@ -6,7 +6,6 @@ import Link from 'next/link'
 import {
   User,
   Phone,
-  MapPin,
   Building2,
   Signpost,
   ShoppingCart,
@@ -18,14 +17,12 @@ import {
   Home,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { WILAYA_COMMUNES } from '@/lib/constants'
+import { getCommunesForWilaya } from '@/lib/algeriaCommunes'
 import { WILAYA_TARIFS, getWilayaDelivery } from '@/lib/deliveryPricing'
 import { trackInitiateCheckout, trackPurchase } from '@/lib/meta-pixel'
 import {
   getProductPricing,
   isProductPurchasable,
-  CLOTHING_SIZES,
-  DEFAULT_COLORS,
   type VariantRecord,
 } from '@/lib/product-pricing'
 import { productImages, type CatalogProduct } from '@/lib/catalog'
@@ -73,7 +70,6 @@ export default function OrderForm({
     phone: '',
     wilaya: '',
     commune: '',
-    address: '',
     size,
     color,
   })
@@ -87,8 +83,9 @@ export default function OrderForm({
   const thumb = images[0] || '/heropicture.jpeg'
   const unitPrice = pricing.price
 
-  const sizeOptions = sizes?.length ? sizes : CLOTHING_SIZES
-  const colorOptions = colors?.length ? colors : DEFAULT_COLORS
+  // Size/color come from the product's variants (via product page)
+  const sizeOptions = sizes || []
+  const colorOptions = colors || []
 
   const bundlePrice = useMemo(() => {
     const option = BUNDLE_OPTIONS.find((b) => b.qty === bundleQty) || BUNDLE_OPTIONS[0]
@@ -97,20 +94,7 @@ export default function OrderForm({
     return { raw, discounted, savePercent: option.savePercent }
   }, [bundleQty, unitPrice])
 
-  const communes = useMemo(() => {
-    if (!form.wilaya) return []
-    const key =
-      form.wilaya === 'Alger'
-        ? 'Algiers'
-        : form.wilaya === 'Algiers'
-          ? 'Algiers'
-          : form.wilaya
-    return (
-      WILAYA_COMMUNES[key] ||
-      WILAYA_COMMUNES[form.wilaya] ||
-      [`${form.wilaya} Centre`, form.wilaya]
-    )
-  }, [form.wilaya])
+  const communes = useMemo(() => getCommunesForWilaya(form.wilaya), [form.wilaya])
 
   const deliveryCost = useMemo(() => {
     if (!form.wilaya) return null
@@ -198,7 +182,7 @@ export default function OrderForm({
       const orderData = {
         customer_name: form.customer_name.trim(),
         phone,
-        address: form.address.trim() || form.commune,
+        address: form.commune,
         wilaya: form.wilaya,
         commune: form.commune,
         notes: null,
@@ -305,12 +289,12 @@ export default function OrderForm({
         dir="rtl"
       >
         <div className="w-full rounded-2xl border border-border bg-surface p-6 text-center md:p-8">
-          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-brand" />
+          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
           <h2 className="font-editorial text-3xl text-foreground">تم تأكيد الطلب</h2>
           <p className="mt-3 text-sm text-muted">
             شكراً لك! سنتواصل معك قريباً لتأكيد التفاصيل.
           </p>
-          <p className="mt-5 text-lg font-bold text-accent">
+          <p className="mt-5 text-lg font-bold text-emerald-400">
             المجموع: {completedTotal.toLocaleString()} DZD
           </p>
           <Link
@@ -487,15 +471,6 @@ export default function OrderForm({
                   </option>
                 ))}
               </select>
-            </Field>
-
-            <Field label="العنوان" icon={MapPin} compact={embedded}>
-              <input
-                value={form.address}
-                onChange={(e) => updateField('address', e.target.value)}
-                placeholder="Adresse de livraison"
-                className="w-full bg-transparent px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted/60"
-              />
             </Field>
 
             <div className="space-y-2">

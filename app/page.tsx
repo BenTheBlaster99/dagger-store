@@ -42,11 +42,11 @@ export default function Home() {
           <p className="animate-rise font-editorial text-sm tracking-[0.35em] text-foreground/80 md:text-base">
             DAGGER.AC
           </p>
-          <h1 className="animate-rise-delay font-editorial mt-3 text-5xl font-bold text-white md:text-7xl lg:text-8xl">
-            The Dagger
+          <h1 className="animate-rise-delay font-display mt-3 text-6xl font-bold tracking-[0.08em] text-white md:text-8xl lg:text-9xl">
+            Dagger
           </h1>
-          <p className="animate-rise-delay mt-4 max-w-lg text-base text-foreground/75 md:text-xl">
-            Born in Shadows. Worn in Light.
+          <p className="animate-rise-delay font-gothic mt-5 max-w-xl text-lg tracking-[0.08em] text-foreground/80 md:text-2xl">
+            Forged after the burn
           </p>
           <div className="animate-rise-delay mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
             <Link

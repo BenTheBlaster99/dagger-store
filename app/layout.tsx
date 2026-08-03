@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Outfit, Cinzel } from "next/font/google";
+import { Bebas_Neue, Outfit, Cinzel, UnifrakturCook } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
@@ -23,9 +23,15 @@ const cinzel = Cinzel({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
+const gothic = UnifrakturCook({
+  variable: "--font-gothic",
+  subsets: ["latin"],
+  weight: "700",
+});
+
 export const metadata: Metadata = {
-  title: "The Dagger — Premium Streetwear",
-  description: "Born in Shadows. Worn in Light. Limited streetwear drops by Dagger.AC.",
+  title: "Dagger — Premium Streetwear",
+  description: "Forged after the burn. Limited streetwear drops by Dagger.AC.",
 };
 
 export default function RootLayout({
@@ -39,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${bebas.variable} ${cinzel.variable} antialiased`}
+        className={`${outfit.variable} ${bebas.variable} ${cinzel.variable} ${gothic.variable} antialiased`}
       >
         {pixelId ? (
           <>

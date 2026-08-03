@@ -27,6 +27,7 @@
   --font-sans: var(--font-outfit);
   --font-display: var(--font-bebas);
   --font-editorial: var(--font-cinzel);
+  --font-gothic: var(--font-gothic);
 }
 
 * {
@@ -50,6 +51,11 @@ body {
 
 .font-editorial {
   font-family: var(--font-cinzel), Georgia, serif;
+}
+
+.font-gothic {
+  font-family: var(--font-gothic), "UnifrakturCook", "Cinzel Decorative", Georgia, serif;
+  letter-spacing: 0.04em;
 }
 
 .scrollbar-hide {

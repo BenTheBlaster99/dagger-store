@@ -29,7 +29,7 @@ export function SiteHeader() {
         <Link href="/" className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0">
           <Image
             src="/daggerLogo.avif"
-            alt="The Dagger"
+            alt="Dagger"
             width={150}
             height={56}
             className="h-11 w-auto object-contain md:h-12"
@@ -92,7 +92,7 @@ export function SiteHeader() {
 export function SiteMarquee() {
   const items = [
     'LIMITED DROPS',
-    'BORN IN SHADOWS',
+    'FORGED AFTER THE BURN',
     'WORN IN LIGHT',
     'DAGGER.AC',
     'STREETWEAR ALGERIA',
@@ -122,9 +122,9 @@ export function SiteFooter() {
     <footer className="mt-20 border-t border-border bg-surface">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
         <div className="space-y-3 md:col-span-1">
-          <p className="font-display text-2xl tracking-[0.14em]">THE DAGGER</p>
+          <p className="font-display text-2xl tracking-[0.14em]">DAGGER</p>
           <p className="text-sm leading-relaxed text-muted">
-            Premium streetwear from the shadows. Limited stock. Built to be worn in the light.
+            Forged after the burn. Limited stock. Built to be worn in the light.
           </p>
         </div>
         <div>
@@ -184,7 +184,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border px-4 py-4 text-center text-xs text-muted">
-        © {new Date().getFullYear()} The Dagger. All rights reserved.
+        © {new Date().getFullYear()} Dagger. All rights reserved.
       </div>
     </footer>
   )

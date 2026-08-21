@@ -118,6 +118,50 @@ export default function OrderForm({
     setCheckoutTracked(true)
   }, [checkoutTracked, product, pricing.price])
 
+  // Live abandoned lead: save name/phone (and more) even if they never submit
+  const leadSaved = useRef(false)
+  useEffect(() => {
+    if (orderSuccess || submitting) return
+    const name = form.customer_name.trim()
+    const phoneDigits = form.phone.replace(/\D/g, '')
+    if (name.length < 2 || phoneDigits.length < 9) return
+
+    const t = setTimeout(() => {
+      leadSaved.current = true
+      void fetch('/api/checkout-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: name,
+          phone: form.phone.trim(),
+          wilaya: form.wilaya || undefined,
+          commune: form.commune || undefined,
+          product_name: product.name,
+          product_id: product.id,
+          quantity: bundleQty,
+          total_price: total,
+          size: form.size || null,
+          color: form.color || null,
+        }),
+      }).catch(() => {})
+    }, 1200)
+
+    return () => clearTimeout(t)
+  }, [
+    form.customer_name,
+    form.phone,
+    form.wilaya,
+    form.commune,
+    form.size,
+    form.color,
+    bundleQty,
+    total,
+    product.id,
+    product.name,
+    orderSuccess,
+    submitting,
+  ])
+
   useEffect(() => {
     if (!orderSuccess || purchaseTracked.current) return
     purchaseTracked.current = true
@@ -222,6 +266,14 @@ export default function OrderForm({
             size: form.size,
             color: form.color,
           }),
+        })
+      } catch {}
+
+      try {
+        await fetch('/api/checkout-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, converted: true }),
         })
       } catch {}
 

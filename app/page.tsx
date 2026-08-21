@@ -42,7 +42,7 @@ export default function Home() {
           <p className="animate-rise font-editorial text-sm tracking-[0.35em] text-foreground/80 md:text-base">
             DAGGER.AC
           </p>
-          <h1 className="animate-rise-delay font-display mt-3 text-6xl font-bold tracking-[0.08em] text-white md:text-8xl lg:text-9xl">
+          <h1 className="animate-rise-delay font-gothic mt-3 text-6xl tracking-[0.04em] text-white md:text-8xl lg:text-[7.5rem]">
             Dagger
           </h1>
           <p className="animate-rise-delay font-gothic mt-5 max-w-xl text-lg tracking-[0.08em] text-foreground/80 md:text-2xl">

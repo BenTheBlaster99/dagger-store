@@ -11,7 +11,7 @@ import {
   ImagePlus,
   Upload,
 } from 'lucide-react'
-import { AdminNav } from '@/components/AdminNav'
+import { AdminShell } from '@/components/AdminNav'
 import {
   CLOTHING_SIZES,
   DEFAULT_COLORS,
@@ -262,27 +262,32 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900">
-      <AdminNav subtitle={`${products.length} products in catalog`} />
-
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
-        <div className="flex flex-wrap gap-2 justify-between">
+    <AdminShell
+      title="Products"
+      subtitle={`${products.length} products in catalog`}
+      actions={
+        <>
           <button
-            onClick={openCreate}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-black text-white text-sm"
-          >
-            <Plus size={14} /> Add product
-          </button>
-          <button
+            type="button"
             onClick={load}
-            className="inline-flex items-center gap-1.5 px-3 py-2 border border-neutral-300 text-sm"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-zinc-200 hover:bg-white/10"
           >
             <RefreshCw size={14} /> Refresh
           </button>
-        </div>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink"
+          >
+            <Plus size={14} /> Add product
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
 
         {error && (
-          <div className="border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
+          <div className="border border-brand/40 bg-brand/10 text-brand px-3 py-2 text-sm">
             {error}
           </div>
         )}
@@ -290,7 +295,7 @@ export default function AdminProductsPage() {
         {showForm && (
           <form
             onSubmit={handleSubmit}
-            className="bg-white border border-neutral-200 p-4 space-y-4"
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4"
           >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">
@@ -303,36 +308,36 @@ export default function AdminProductsPage() {
 
             <div className="grid sm:grid-cols-2 gap-3">
               <label className="space-y-1 text-sm">
-                <span className="text-xs uppercase text-neutral-500">Name *</span>
+                <span className="text-xs uppercase text-zinc-500">Name *</span>
                 <input
                   required
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-neutral-300 px-3 py-2"
+                  className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-xs uppercase text-neutral-500">Category</span>
+                <span className="text-xs uppercase text-zinc-500">Category</span>
                 <input
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                   placeholder="T-Shirt, Hoodie..."
-                  className="w-full border border-neutral-300 px-3 py-2"
+                  className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-xs uppercase text-neutral-500">Base price (DA) *</span>
+                <span className="text-xs uppercase text-zinc-500">Base price (DA) *</span>
                 <input
                   required
                   type="number"
                   min="1"
                   value={form.base_price}
                   onChange={(e) => setForm((f) => ({ ...f, base_price: e.target.value }))}
-                  className="w-full border border-neutral-300 px-3 py-2"
+                  className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
                 />
               </label>
               <label className="space-y-1 text-sm">
-                <span className="text-xs uppercase text-neutral-500">
+                <span className="text-xs uppercase text-zinc-500">
                   Sale price (DA) {discountPreview ? `· -${discountPreview}%` : ''}
                 </span>
                 <input
@@ -341,25 +346,25 @@ export default function AdminProductsPage() {
                   value={form.coupon_price}
                   onChange={(e) => setForm((f) => ({ ...f, coupon_price: e.target.value }))}
                   placeholder="Leave empty = no discount"
-                  className="w-full border border-neutral-300 px-3 py-2"
+                  className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
                 />
               </label>
             </div>
 
             <label className="block space-y-1 text-sm">
-              <span className="text-xs uppercase text-neutral-500">Description</span>
+              <span className="text-xs uppercase text-zinc-500">Description</span>
               <textarea
                 rows={3}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full border border-neutral-300 px-3 py-2"
+                className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
               />
             </label>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs uppercase text-neutral-500">Images</span>
-                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-neutral-300 text-sm cursor-pointer hover:bg-neutral-50">
+                <span className="text-xs uppercase text-zinc-500">Images</span>
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/15 bg-[#121212] text-zinc-100 text-sm cursor-pointer hover:bg-neutral-50">
                   {uploading ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
@@ -381,7 +386,7 @@ export default function AdminProductsPage() {
               </div>
 
               {form.images.length === 0 ? (
-                <div className="border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+                <div className="border border-dashed border-neutral-300 p-6 text-center text-sm text-zinc-500">
                   <ImagePlus size={20} className="mx-auto mb-2 text-neutral-400" />
                   Upload product photos (JPG/PNG/WEBP, max 8MB each).
                   First image is the main storefront photo.
@@ -400,7 +405,7 @@ export default function AdminProductsPage() {
                         className="w-full h-full object-cover"
                       />
                       {idx === 0 && (
-                        <span className="absolute top-1 left-1 bg-black text-white text-[10px] px-1.5 py-0.5">
+                        <span className="absolute top-1 left-1 bg-accent text-accent-ink font-semibold text-[10px] px-1.5 py-0.5">
                           Main
                         </span>
                       )}
@@ -433,7 +438,7 @@ export default function AdminProductsPage() {
                   ))}
                 </div>
               )}
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-zinc-500">
                 Images upload to Supabase Storage and are saved on the product when you click Save.
               </p>
             </div>
@@ -464,14 +469,14 @@ export default function AdminProductsPage() {
                   <button
                     type="button"
                     onClick={fillSizeColorGrid}
-                    className="text-xs px-2 py-1 border border-neutral-300"
+                    className="text-xs px-2 py-1 rounded-lg border border-white/15 bg-[#121212] text-zinc-100"
                   >
                     Fill S–XL grid
                   </button>
                   <button
                     type="button"
                     onClick={() => setVariants((v) => [...v, newVariant()])}
-                    className="text-xs px-2 py-1 border border-neutral-300"
+                    className="text-xs px-2 py-1 rounded-lg border border-white/15 bg-[#121212] text-zinc-100"
                   >
                     + Row
                   </button>
@@ -490,7 +495,7 @@ export default function AdminProductsPage() {
                           )
                         )
                       }
-                      className="col-span-3 border border-neutral-300 px-2 py-1.5 text-sm"
+                      className="col-span-3 rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-2 py-1.5 text-sm"
                     >
                       {CLOTHING_SIZES.map((size) => (
                         <option key={size} value={size}>
@@ -509,7 +514,7 @@ export default function AdminProductsPage() {
                         )
                       }
                       placeholder="Color"
-                      className="col-span-4 border border-neutral-300 px-2 py-1.5 text-sm"
+                      className="col-span-4 rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-2 py-1.5 text-sm"
                     />
                     <input
                       type="number"
@@ -522,7 +527,7 @@ export default function AdminProductsPage() {
                           )
                         )
                       }
-                      className="col-span-3 border border-neutral-300 px-2 py-1.5 text-sm"
+                      className="col-span-3 rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-2 py-1.5 text-sm"
                     />
                     <button
                       type="button"
@@ -541,7 +546,7 @@ export default function AdminProductsPage() {
                   <option key={c} value={c} />
                 ))}
               </datalist>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-zinc-500">
                 Total pieces: {variants.reduce((s, v) => s + Number(v.stock || 0), 0)}
               </p>
             </div>
@@ -549,7 +554,7 @@ export default function AdminProductsPage() {
             <button
               type="submit"
               disabled={saving || uploading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white text-sm disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-ink font-semibold text-sm disabled:opacity-60"
             >
               {(saving || uploading) && <Loader2 size={14} className="animate-spin" />}
               {editingId ? 'Save changes' : 'Create product'}
@@ -558,12 +563,12 @@ export default function AdminProductsPage() {
         )}
 
         {loading ? (
-          <div className="py-20 flex items-center justify-center gap-2 text-neutral-500">
+          <div className="py-20 flex items-center justify-center gap-2 text-zinc-500">
             <Loader2 className="animate-spin" size={18} />
             Loading products…
           </div>
         ) : products.length === 0 ? (
-          <div className="py-16 text-center text-neutral-500">
+          <div className="py-16 text-center text-zinc-500">
             No products yet. Add your first tee.
           </div>
         ) : (
@@ -576,7 +581,7 @@ export default function AdminProductsPage() {
               return (
                 <article
                   key={product.id}
-                  className="bg-white border border-neutral-200 p-4 space-y-3"
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex gap-3 min-w-0">
@@ -588,11 +593,11 @@ export default function AdminProductsPage() {
                           className="w-16 h-16 object-cover border border-neutral-200"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-neutral-100 border border-neutral-200" />
+                        <div className="w-16 h-16 bg-white/5 border border-neutral-200" />
                       )}
                       <div className="min-w-0">
                         <h2 className="font-semibold truncate">{product.name}</h2>
-                        <p className="text-xs text-neutral-500 uppercase tracking-wide">
+                        <p className="text-xs text-zinc-500 uppercase tracking-wide">
                           {product.category || 'Uncategorized'}
                           {!product.is_active ? ' · Hidden' : ''}
                           {soldOut ? ' · Sold out' : ''}
@@ -613,7 +618,7 @@ export default function AdminProductsPage() {
                               {pricing.base.toLocaleString()} DA
                             </span>
                           )}
-                          <span className="text-neutral-500 ml-3">
+                          <span className="text-zinc-500 ml-3">
                             {stock} pieces left
                           </span>
                         </p>
@@ -623,7 +628,7 @@ export default function AdminProductsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEdit(product)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-neutral-300"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-white/15 bg-[#121212] text-zinc-100"
                       >
                         <Pencil size={14} /> Edit
                       </button>
@@ -640,7 +645,7 @@ export default function AdminProductsPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs text-left">
                         <thead>
-                          <tr className="text-neutral-500 border-b border-neutral-200">
+                          <tr className="text-zinc-500 border-b border-neutral-200">
                             <th className="py-1 pr-3 font-medium">Size</th>
                             <th className="py-1 pr-3 font-medium">Color</th>
                             <th className="py-1 font-medium">Stock</th>
@@ -664,6 +669,6 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
-    </main>
+    </AdminShell>
   )
 }

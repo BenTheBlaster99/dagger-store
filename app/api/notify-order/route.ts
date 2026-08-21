@@ -16,48 +16,63 @@ type OrderNotifyPayload = {
   notes?: string | null
 }
 
-function buildWhatsAppText(order: OrderNotifyPayload) {
+function buildTelegramText(order: OrderNotifyPayload) {
   const lines = [
-    '*New Dagger Order*',
+    '🛍️ *New Dagger Order*',
     '',
-    `*Customer:* ${order.customer_name}`,
-    `*Phone:* ${order.phone}`,
-    `*Address:* ${order.address}`,
-    `*Wilaya:* ${order.wilaya}`,
-    `*Commune:* ${order.commune}`,
+    `👤 *Customer:* ${escapeMarkdown(order.customer_name)}`,
+    `📞 *Phone:* ${escapeMarkdown(order.phone)}`,
+    `📍 *Wilaya:* ${escapeMarkdown(order.wilaya)}`,
+    `🏘 *Commune:* ${escapeMarkdown(order.commune)}`,
+    order.address ? `📫 *Address:* ${escapeMarkdown(order.address)}` : null,
     '',
-    `*Product:* ${order.product_name}`,
-    `*Qty:* ${order.quantity}`,
-    order.size ? `*Size:* ${order.size}` : null,
-    order.color ? `*Color:* ${order.color}` : null,
+    `📦 *Product:* ${escapeMarkdown(order.product_name)}`,
+    `🔢 *Qty:* ${order.quantity}`,
+    order.size ? `📏 *Size:* ${escapeMarkdown(order.size)}` : null,
+    order.color ? `🎨 *Color:* ${escapeMarkdown(order.color)}` : null,
     '',
-    `*Delivery:* ${order.delivery_method}`,
-    `*Delivery cost:* ${Number(order.delivery_cost).toLocaleString()} DA`,
-    `*Total:* ${Number(order.total_price).toLocaleString()} DA`,
-    order.notes ? `\n*Notes:* ${order.notes}` : null,
+    `🚚 *Delivery:* ${escapeMarkdown(order.delivery_method)}`,
+    `💸 *Delivery cost:* ${Number(order.delivery_cost).toLocaleString()} DA`,
+    `💵 *Total:* ${Number(order.total_price).toLocaleString()} DA`,
+    order.notes ? `\n📝 *Notes:* ${escapeMarkdown(order.notes)}` : null,
   ]
   return lines.filter((line) => line !== null).join('\n')
 }
 
-async function sendWhatsApp(order: OrderNotifyPayload) {
-  const phone = process.env.CALLMEBOT_PHONE
-  const apikey = process.env.CALLMEBOT_APIKEY
+function escapeMarkdown(value: string) {
+  return String(value).replace(/([_*`\[])/g, '\\$1')
+}
 
-  if (!phone || !apikey) {
-    return { skipped: true as const, reason: 'Missing CALLMEBOT_PHONE or CALLMEBOT_APIKEY' }
+async function sendTelegram(order: OrderNotifyPayload) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_CHAT_ID
+
+  if (!token || !chatId) {
+    return {
+      skipped: true as const,
+      reason: 'Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID',
+    }
   }
 
-  const text = encodeURIComponent(buildWhatsAppText(order))
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${text}&apikey=${encodeURIComponent(apikey)}`
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: buildTelegramText(order),
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true,
+    }),
+  })
 
-  const res = await fetch(url)
-  const body = await res.text()
-
-  if (!res.ok) {
-    throw new Error(`CallMeBot failed (${res.status}): ${body}`)
+  const body = await res.json().catch(async () => ({ raw: await res.text() }))
+  if (!res.ok || body?.ok === false) {
+    throw new Error(
+      `Telegram failed (${res.status}): ${typeof body === 'string' ? body : JSON.stringify(body)}`
+    )
   }
 
-  return { skipped: false as const, body }
+  return { skipped: false as const, provider: 'telegram' as const, body }
 }
 
 async function sendEmail(order: OrderNotifyPayload) {
@@ -131,16 +146,16 @@ export async function POST(req: Request) {
     }
 
     const results = {
-      whatsapp: null as unknown,
+      telegram: null as unknown,
       email: null as unknown,
     }
 
     try {
-      results.whatsapp = await sendWhatsApp(orderData)
+      results.telegram = await sendTelegram(orderData)
     } catch (err) {
-      console.error('WhatsApp notify failed:', err)
-      results.whatsapp = {
-        error: err instanceof Error ? err.message : 'WhatsApp failed',
+      console.error('Telegram notify failed:', err)
+      results.telegram = {
+        error: err instanceof Error ? err.message : 'Telegram failed',
       }
     }
 

@@ -1,9 +1,8 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Lock } from 'lucide-react'
-import { Suspense } from 'react'
 
 function LoginForm() {
   const router = useRouter()
@@ -38,32 +37,41 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-100 flex items-center justify-center p-4">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0a0a0a] p-4 text-zinc-100">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(229,82,95,0.18),transparent_50%),radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.04),transparent_45%)]"
+      />
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white border border-neutral-200 p-6 space-y-4"
+        className="relative w-full max-w-sm space-y-5 rounded-2xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur"
       >
-        <div className="flex items-center gap-2">
-          <Lock size={18} />
-          <h1 className="text-xl font-semibold">Dagger Admin</h1>
+        <div>
+          <p className="font-gothic text-3xl tracking-wide text-white">Dagger</p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">
+            Command center
+          </p>
         </div>
-        <p className="text-sm text-neutral-600">Owner access only.</p>
+        <p className="text-sm text-zinc-400">Owner access only.</p>
         <label className="block space-y-1.5">
-          <span className="text-xs uppercase tracking-wider text-neutral-500">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:border-black"
-            required
-            autoFocus
-          />
+          <span className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">Password</span>
+          <div className="relative">
+            <Lock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-white/15 bg-[#121212] py-2.5 pl-9 pr-3 text-sm text-zinc-100 outline-none focus:border-brand/50"
+              required
+              autoFocus
+            />
+          </div>
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-brand">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-2.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 text-sm font-bold tracking-wide text-accent-ink transition hover:bg-accent/90 disabled:opacity-60"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
           Sign in
@@ -77,8 +85,8 @@ export default function AdminLoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen flex items-center justify-center">
-          <Loader2 className="animate-spin text-neutral-400" />
+        <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-zinc-500">
+          <Loader2 className="animate-spin" />
         </main>
       }
     >

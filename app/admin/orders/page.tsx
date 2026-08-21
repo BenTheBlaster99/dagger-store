@@ -7,7 +7,7 @@ import {
   Ban,
   RefreshCw,
 } from 'lucide-react'
-import { AdminNav } from '@/components/AdminNav'
+import { AdminShell } from '@/components/AdminNav'
 
 type OrderStatus =
   | 'pending'
@@ -186,133 +186,139 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50 text-neutral-900">
-      <AdminNav subtitle={`${orders.length} shown · ${bannedCount} banned phones`} />
-
-      <div className="max-w-6xl mx-auto px-4 pt-3 flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-2 overflow-x-auto">
-          {STATUS_FILTERS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setFilter(item.id)}
-              className={`px-3 py-1.5 text-sm whitespace-nowrap border ${
-                filter === item.id
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white border-neutral-300 text-neutral-700'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
+    <AdminShell
+      title="Orders"
+      subtitle={`${orders.length} shown · ${bannedCount} banned phones`}
+      actions={
+        <>
           <button
+            type="button"
             onClick={load}
-            className="p-2 border border-neutral-300 hover:bg-neutral-100"
+            className="rounded-lg border border-white/15 bg-white/5 p-2 text-zinc-300 hover:bg-white/10"
             aria-label="Refresh"
           >
             <RefreshCw size={16} />
           </button>
           <button
+            type="button"
             onClick={exportExcel}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-black text-white text-sm"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink"
           >
             <Download size={14} />
             Excel
           </button>
+        </>
+      }
+    >
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        {STATUS_FILTERS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setFilter(item.id)}
+            className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm transition ${
+              filter === item.id
+                ? 'bg-brand text-white'
+                : 'border border-white/10 bg-white/5 text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-brand/40 bg-brand/10 px-4 py-3 text-sm text-brand">
+          {error}
         </div>
-      </div>
+      )}
 
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-3">
-        {error && (
-          <div className="border border-red-200 bg-red-50 text-red-700 px-3 py-2 text-sm">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="py-20 flex items-center justify-center text-neutral-500 gap-2">
-            <Loader2 className="animate-spin" size={18} />
-            Loading customers…
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="py-20 text-center text-neutral-500">No customers for this filter.</div>
-        ) : (
-          <div className="space-y-3">
-            {orders.map((order) => {
-              const busy = busyId === order.id
-              return (
-                <article
-                  key={order.id}
-                  className="bg-white border border-neutral-200 p-4 space-y-3"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h2 className="font-semibold text-base">{order.customer_name}</h2>
-                      <p className="text-sm text-neutral-600">{order.phone}</p>
-                    </div>
-                    <div className="text-right text-sm">
-                      <p className="font-medium">
-                        {Number(order.total_price).toLocaleString()} DA
-                      </p>
-                      <p className="text-neutral-500">
-                        {order.created_at
-                          ? new Date(order.created_at).toLocaleString('en-GB')
-                          : '—'}
-                      </p>
-                    </div>
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-24 text-zinc-500">
+          <Loader2 className="animate-spin" size={18} />
+          Loading customers…
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 py-20 text-center text-zinc-500">
+          No customers for this filter.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map((order) => {
+            const busy = busyId === order.id
+            return (
+              <article
+                key={order.id}
+                className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h2 className="font-editorial text-xl text-white">{order.customer_name}</h2>
+                    <p className="mt-1 text-sm text-zinc-400" dir="ltr">
+                      {order.phone}
+                    </p>
                   </div>
+                  <div className="text-right text-sm">
+                    <p className="text-lg font-semibold tabular-nums text-white">
+                      {Number(order.total_price).toLocaleString()} DA
+                    </p>
+                    <p className="text-zinc-500">
+                      {order.created_at
+                        ? new Date(order.created_at).toLocaleString('en-GB')
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
 
-                  <p className="text-sm text-neutral-700">{formatAddress(order)}</p>
-                  <p className="text-xs text-neutral-500 uppercase tracking-wide">
-                    {productSummary(order)}
-                    {order.is_banned ? ' · BANNED' : ''}
-                  </p>
+                <p className="text-sm text-zinc-400">{formatAddress(order)}</p>
+                <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-600">
+                  {productSummary(order)}
+                  {order.is_banned ? ' · BANNED' : ''}
+                </p>
 
-                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                    <label className="text-xs text-neutral-500 sm:mr-1">Status</label>
-                    <select
-                      value={order.status}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <label className="text-xs text-zinc-500 sm:mr-1">Status</label>
+                  <select
+                    value={order.status}
+                    disabled={busy}
+                    onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
+                    className="rounded-lg border border-white/15 bg-[#121212] px-3 py-2 text-sm text-zinc-100 outline-none focus:border-brand/50"
+                  >
+                    {ORDER_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+
+                  {order.is_banned ? (
+                    <button
+                      type="button"
                       disabled={busy}
-                      onChange={(e) =>
-                        updateStatus(order.id, e.target.value as OrderStatus)
-                      }
-                      className="border border-neutral-300 px-2 py-1.5 text-sm bg-white"
+                      onClick={() => unbanCustomer(order.phone, order.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-3 py-1.5 text-sm text-zinc-300"
                     >
-                      {ORDER_STATUSES.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
+                      Unban
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => banCustomer(order)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-brand/40 px-3 py-1.5 text-sm text-brand"
+                    >
+                      <Ban size={14} />
+                      Ban
+                    </button>
+                  )}
 
-                    {order.is_banned ? (
-                      <button
-                        disabled={busy}
-                        onClick={() => unbanCustomer(order.phone, order.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-neutral-300"
-                      >
-                        Unban
-                      </button>
-                    ) : (
-                      <button
-                        disabled={busy}
-                        onClick={() => banCustomer(order)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-red-300 text-red-700"
-                      >
-                        <Ban size={14} />
-                        Ban
-                      </button>
-                    )}
-
-                    {busy && <Loader2 size={16} className="animate-spin text-neutral-400" />}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </main>
+                  {busy && <Loader2 size={16} className="animate-spin text-zinc-500" />}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </AdminShell>
   )
 }

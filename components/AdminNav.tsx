@@ -83,9 +83,9 @@ export function AdminShell({
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(229,82,95,0.12),transparent_45%),radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.04),transparent_40%)]"
       />
 
-      <div className="relative mx-auto flex min-h-screen max-w-[1600px]">
+      <div className="relative flex min-h-screen w-full">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-white/10 bg-[#0e0e0e]/95 backdrop-blur lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-[#0e0e0e]/95 backdrop-blur lg:flex">
           <div className="border-b border-white/10 px-5 py-6">
             <p className="font-gothic text-2xl tracking-wide text-white">Dagger</p>
             <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-zinc-500">

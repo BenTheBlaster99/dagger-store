@@ -13,7 +13,6 @@ import {
   getTotalStock,
   isProductPurchasable,
   CLOTHING_SIZES,
-  DEFAULT_COLORS,
   type VariantRecord,
 } from '@/lib/product-pricing'
 import { productImages, type CatalogProduct } from '@/lib/catalog'
@@ -60,26 +59,45 @@ function ProductPageContent() {
 
   const availableSizes = useMemo(() => {
     const fromVariants = Array.from(
-      new Set(variants.filter((v) => Number(v.stock || 0) > 0).map((v) => v.size).filter(Boolean))
-    ) as string[]
+      new Set(
+        variants
+          .filter((v) => Number(v.stock || 0) > 0)
+          .map((v) => (v.size || '').trim())
+          .filter(Boolean)
+      )
+    )
     return fromVariants.length > 0 ? fromVariants : CLOTHING_SIZES
   }, [variants])
 
   const availableColors = useMemo(() => {
-    const fromVariants = Array.from(
+    // Only colors configured on in-stock variants — never invent defaults
+    return Array.from(
       new Set(
         variants
           .filter((v) => {
             if (Number(v.stock || 0) <= 0) return false
             if (size && v.size && v.size !== size) return false
-            return Boolean(v.color)
+            return Boolean((v.color || '').trim())
           })
-          .map((v) => v.color)
-          .filter(Boolean)
+          .map((v) => String(v.color).trim())
       )
-    ) as string[]
-    return fromVariants.length > 0 ? fromVariants : DEFAULT_COLORS
+    )
   }, [variants, size])
+
+  // Lock single color / clear when none
+  useEffect(() => {
+    if (availableColors.length === 0) {
+      if (color) setColor('')
+      return
+    }
+    if (availableColors.length === 1) {
+      if (color !== availableColors[0]) setColor(availableColors[0])
+      return
+    }
+    if (color && !availableColors.some((c) => c.toLowerCase() === color.toLowerCase())) {
+      setColor('')
+    }
+  }, [availableColors, color])
 
   useEffect(() => {
     if (!product || !pricing || tracked) return

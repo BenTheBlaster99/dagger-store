@@ -59,7 +59,7 @@ function newVariant(partial?: Partial<VariantDraft>): VariantDraft {
   return {
     key: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     size: partial?.size || 'M',
-    color: partial?.color || 'Black',
+    color: partial?.color ?? '',
     stock: partial?.stock ?? 0,
   }
 }
@@ -73,8 +73,8 @@ export default function AdminProductsPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [variants, setVariants] = useState<VariantDraft[]>([
-    newVariant({ size: 'M', color: 'Black', stock: 10 }),
-    newVariant({ size: 'L', color: 'Black', stock: 10 }),
+    newVariant({ size: 'M', color: '', stock: 10 }),
+    newVariant({ size: 'L', color: '', stock: 10 }),
   ])
   const [uploading, setUploading] = useState(false)
 
@@ -108,10 +108,10 @@ export default function AdminProductsPage() {
     setEditingId(null)
     setForm(emptyForm)
     setVariants([
-      newVariant({ size: 'S', color: 'Black', stock: 0 }),
-      newVariant({ size: 'M', color: 'Black', stock: 0 }),
-      newVariant({ size: 'L', color: 'Black', stock: 0 }),
-      newVariant({ size: 'XL', color: 'Black', stock: 0 }),
+      newVariant({ size: 'S', color: '', stock: 0 }),
+      newVariant({ size: 'M', color: '', stock: 0 }),
+      newVariant({ size: 'L', color: '', stock: 0 }),
+      newVariant({ size: 'XL', color: '', stock: 0 }),
     ])
     setShowForm(true)
   }
@@ -137,7 +137,7 @@ export default function AdminProductsPage() {
         ? existing.map((v) =>
             newVariant({
               size: v.size || 'M',
-              color: v.color || 'Black',
+              color: (v.color || '').trim(),
               stock: Number(v.stock || 0),
             })
           )
@@ -162,7 +162,7 @@ export default function AdminProductsPage() {
       is_active: form.is_active,
       variants: variants.map((v) => ({
         size: v.size,
-        color: v.color,
+        color: v.color.trim() || null,
         stock: Number(v.stock || 0),
       })),
     }
@@ -243,8 +243,22 @@ export default function AdminProductsPage() {
 
   function fillSizeColorGrid() {
     const colors = Array.from(
-      new Set(variants.map((v) => v.color.trim()).filter(Boolean).concat(['Black', 'White']))
-    ).slice(0, 4)
+      new Set(variants.map((v) => v.color.trim()).filter(Boolean))
+    )
+    // Size-only grid when no colors are set — color stays empty for checkout to hide
+    if (colors.length === 0) {
+      setVariants(
+        ['S', 'M', 'L', 'XL'].map((size) => {
+          const existing = variants.find((v) => v.size === size && !v.color.trim())
+          return newVariant({
+            size,
+            color: '',
+            stock: existing ? existing.stock : 0,
+          })
+        })
+      )
+      return
+    }
     const next: VariantDraft[] = []
     for (const color of colors) {
       for (const size of ['S', 'M', 'L', 'XL']) {
@@ -465,6 +479,10 @@ export default function AdminProductsPage() {
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-medium text-sm">Stock by size & color</h3>
+                <p className="w-full text-[11px] text-zinc-500">
+                  Leave color blank for a single-look product — checkout hides color. Add more
+                  colors only if customers should choose.
+                </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -513,7 +531,7 @@ export default function AdminProductsPage() {
                           )
                         )
                       }
-                      placeholder="Color"
+                      placeholder="Color (optional)"
                       className="col-span-4 rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-2 py-1.5 text-sm"
                     />
                     <input

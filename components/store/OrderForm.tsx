@@ -74,6 +74,12 @@ export default function OrderForm({
     color,
   })
 
+  // Size/color come from admin product variants only
+  const sizeOptions = sizes || []
+  const colorOptions = colors || []
+  const colorMode =
+    colorOptions.length === 0 ? 'none' : colorOptions.length === 1 ? 'single' : 'multi'
+
   useEffect(() => {
     setForm((prev) => ({ ...prev, size, color }))
   }, [size, color])
@@ -82,10 +88,6 @@ export default function OrderForm({
   const images = useMemo(() => productImages(product), [product])
   const thumb = images[0] || '/heropicture.jpeg'
   const unitPrice = pricing.price
-
-  // Size/color come from the product's variants (via product page)
-  const sizeOptions = sizes || []
-  const colorOptions = colors || []
 
   const bundlePrice = useMemo(() => {
     const option = BUNDLE_OPTIONS.find((b) => b.qty === bundleQty) || BUNDLE_OPTIONS[0]
@@ -194,7 +196,7 @@ export default function OrderForm({
     if (!form.wilaya) next.wilaya = 'مطلوب'
     if (!form.commune) next.commune = 'مطلوب'
     if (!form.size) next.size = 'اختر المقاس'
-    if (!form.color) next.color = 'اختر اللون'
+    if (colorMode === 'multi' && !form.color) next.color = 'اختر اللون'
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -438,7 +440,11 @@ export default function OrderForm({
             })}
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <div
+            className={`mt-4 grid gap-2.5 ${
+              colorMode === 'none' ? 'grid-cols-1' : 'grid-cols-2'
+            }`}
+          >
             <label className="space-y-1 text-sm">
               <span className="font-medium text-muted">المقاس *</span>
               <select
@@ -455,22 +461,36 @@ export default function OrderForm({
               </select>
               {errors.size && <p className="text-xs text-brand">{errors.size}</p>}
             </label>
-            <label className="space-y-1 text-sm">
-              <span className="font-medium text-muted">اللون *</span>
-              <select
-                value={form.color}
-                onChange={(e) => updateField('color', e.target.value)}
-                className="form-select w-full rounded-xl border border-border px-3 py-2.5 outline-none focus:border-accent"
-              >
-                <option value="">Color</option>
-                {colorOptions.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-              {errors.color && <p className="text-xs text-brand">{errors.color}</p>}
-            </label>
+
+            {colorMode === 'multi' ? (
+              <label className="space-y-1 text-sm">
+                <span className="font-medium text-muted">اللون *</span>
+                <select
+                  value={form.color}
+                  onChange={(e) => updateField('color', e.target.value)}
+                  className="form-select w-full rounded-xl border border-border px-3 py-2.5 outline-none focus:border-accent"
+                >
+                  <option value="">Color</option>
+                  {colorOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                {errors.color && <p className="text-xs text-brand">{errors.color}</p>}
+              </label>
+            ) : colorMode === 'single' ? (
+              <label className="space-y-1 text-sm">
+                <span className="font-medium text-muted">اللون</span>
+                <input
+                  type="text"
+                  value={colorOptions[0]}
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-muted outline-none"
+                />
+              </label>
+            ) : null}
           </div>
 
           <div className="mt-4 space-y-3">

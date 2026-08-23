@@ -2,12 +2,12 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SiteFooter, SiteHeader, SiteMarquee } from '@/components/store/SiteChrome'
 import OrderForm from '@/components/store/OrderForm'
+import { ProductGallery } from '@/components/store/ProductGallery'
 import {
   getProductPricing,
   getTotalStock,
@@ -27,7 +27,6 @@ function ProductPageContent() {
   const [product, setProduct] = useState<CatalogProduct | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeImage, setActiveImage] = useState(0)
   const [size, setSize] = useState(searchParams.get('size') || '')
   const [color, setColor] = useState(searchParams.get('color') || '')
   const [tracked, setTracked] = useState(false)
@@ -135,47 +134,24 @@ function ProductPageContent() {
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 lg:grid-cols-2 lg:items-start lg:gap-10 lg:py-10">
         {/* Left: gallery + product details */}
         <div className="space-y-5">
-          <div className="relative aspect-square max-h-[min(58vh,560px)] w-full overflow-hidden rounded-md bg-surface-2 lg:aspect-auto lg:h-[min(52vh,520px)]">
-            {images[activeImage] ? (
-              <Image
-                src={images[activeImage]}
-                alt={product.name}
-                fill
-                priority
-                className="object-cover"
-                sizes="(max-width:1024px) 100vw, 50vw"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-muted">No image</div>
-            )}
-            {pricing.onSale && (
-              <span className="absolute left-3 top-3 bg-brand px-2.5 py-1 text-xs font-bold text-white">
-                -{pricing.discountPercent}% OFF
-              </span>
-            )}
-            {!canBuy && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-                <span className="bg-danger px-3 py-1 text-xs font-bold text-white">SOLD OUT</span>
-              </div>
-            )}
-          </div>
-
-          {images.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {images.map((img, idx) => (
-                <button
-                  key={img}
-                  type="button"
-                  onClick={() => setActiveImage(idx)}
-                  className={`relative h-16 w-16 shrink-0 overflow-hidden border sm:h-20 sm:w-20 ${
-                    idx === activeImage ? 'border-accent' : 'border-border'
-                  }`}
-                >
-                  <Image src={img} alt="" fill className="object-cover" sizes="80px" />
-                </button>
-              ))}
-            </div>
-          )}
+          <ProductGallery
+            images={images}
+            alt={product.name}
+            badge={
+              pricing.onSale ? (
+                <span className="absolute left-3 top-3 z-10 bg-brand px-2.5 py-1 text-xs font-bold text-white">
+                  -{pricing.discountPercent}% OFF
+                </span>
+              ) : null
+            }
+            overlay={
+              !canBuy ? (
+                <div className="absolute inset-0 z-[5] flex items-center justify-center bg-background/70">
+                  <span className="bg-danger px-3 py-1 text-xs font-bold text-white">SOLD OUT</span>
+                </div>
+              ) : null
+            }
+          />
 
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted">
@@ -205,49 +181,6 @@ function ProductPageContent() {
             {canBuy && stock > 0 && stock <= 8 && (
               <p className="mt-3 text-sm font-medium text-brand">Only {stock} pieces left</p>
             )}
-
-            <div className="mt-6 space-y-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted">Size</p>
-              <div className="flex flex-wrap gap-2">
-                {availableSizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      setSize(s)
-                      setColor('')
-                    }}
-                    className={`min-w-12 border px-3 py-2 text-sm font-semibold ${
-                      size === s
-                        ? 'border-accent bg-accent text-accent-ink'
-                        : 'border-border hover:border-foreground'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted">Color</p>
-              <div className="flex flex-wrap gap-2">
-                {availableColors.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`border px-4 py-2 text-sm font-semibold capitalize ${
-                      color.toLowerCase() === c.toLowerCase()
-                        ? 'border-accent bg-accent text-accent-ink'
-                        : 'border-border hover:border-foreground'
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <Link
               href="/shop"

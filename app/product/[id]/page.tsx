@@ -180,7 +180,7 @@ function ProductPageContent() {
             </h1>
 
             <div className="mt-4 flex items-baseline gap-3">
-              <span className="text-2xl font-bold md:text-3xl">
+              <span className="text-2xl font-bold text-price md:text-3xl">
                 {pricing.price.toLocaleString()} DA
               </span>
               {pricing.onSale && (

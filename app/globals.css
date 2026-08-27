@@ -11,6 +11,7 @@
   --accent-ink: #0c0c0c;
   --brand: #e5525f;
   --danger: #ef4444;
+  --price: #22c55e;
 }
 
 @theme inline {
@@ -24,6 +25,7 @@
   --color-accent-ink: var(--accent-ink);
   --color-brand: var(--brand);
   --color-danger: var(--danger);
+  --color-price: var(--price);
   --font-sans: var(--font-outfit);
   --font-display: var(--font-bebas);
   --font-editorial: var(--font-cinzel);

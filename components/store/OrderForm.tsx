@@ -426,12 +426,17 @@ export default function OrderForm({
                     <p className="truncate text-[11px] text-muted">{product.name}</p>
                   </div>
                   <div className="text-left">
-                    <span className="inline-flex rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-ink sm:text-sm">
+                    <span className="inline-flex rounded-full bg-price/15 px-2.5 py-1 text-xs font-bold text-price sm:text-sm">
                       {price.toLocaleString('en-US', { minimumFractionDigits: 2 })} DZD
                     </span>
-                    {opt.savePercent > 0 && (
+                    {(opt.savePercent > 0 || pricing.onSale) && (
                       <p className="mt-1 text-[11px] text-muted line-through">
-                        {raw.toLocaleString('en-US', { minimumFractionDigits: 2 })} DZD
+                        {(
+                          opt.savePercent > 0
+                            ? raw
+                            : pricing.base * opt.qty
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
+                        DZD
                       </p>
                     )}
                   </div>
@@ -589,6 +594,7 @@ export default function OrderForm({
               value={`DZD ${bundlePrice.discounted.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
               })}`}
+              price
             />
             <SummaryRow
               icon={Truck}
@@ -613,6 +619,7 @@ export default function OrderForm({
                       })}`
                 }
                 strong
+                price
               />
             </div>
           </div>
@@ -673,20 +680,26 @@ function SummaryRow({
   label,
   value,
   strong,
+  price,
 }: {
   icon: typeof ShoppingCart
   label: string
   value: string
   strong?: boolean
+  price?: boolean
 }) {
   return (
-    <div className={`flex items-center justify-between gap-3 ${strong ? 'font-bold text-foreground' : 'text-muted'}`}>
-      <span className="tabular-nums text-foreground" dir="ltr">
+    <div
+      className={`flex items-center justify-between gap-3 ${
+        strong ? 'font-bold' : ''
+      } ${price ? 'text-price' : strong ? 'text-foreground' : 'text-muted'}`}
+    >
+      <span className={`tabular-nums ${price ? 'text-price' : 'text-foreground'}`} dir="ltr">
         {value}
       </span>
-      <span className="inline-flex items-center gap-2">
+      <span className="inline-flex items-center gap-2 text-muted">
         {label}
-        <Icon size={16} className="text-muted" />
+        <Icon size={16} />
       </span>
     </div>
   )

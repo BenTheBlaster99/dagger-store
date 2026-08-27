@@ -42,8 +42,15 @@ export default function Home() {
           <p className="animate-rise font-editorial text-sm tracking-[0.35em] text-foreground/80 md:text-base">
             DAGGER.AC
           </p>
-          <h1 className="animate-rise-delay font-gothic mt-3 text-6xl tracking-[0.04em] text-white md:text-8xl lg:text-[7.5rem]">
-            Dagger
+          <h1 className="animate-rise-delay mt-4 flex justify-center">
+            <Image
+              src="/daggerLogo.avif"
+              alt="Dagger"
+              width={520}
+              height={200}
+              priority
+              className="h-24 w-auto object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)] sm:h-28 md:h-36 lg:h-44"
+            />
           </h1>
           <p className="animate-rise-delay font-gothic mt-5 max-w-xl text-lg tracking-[0.08em] text-foreground/80 md:text-2xl">
             Forged after the burn

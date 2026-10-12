@@ -282,7 +282,7 @@ export default function AdminDashboardPage() {
             {[
               { href: '/admin/orders', label: 'Manage orders', hint: 'Fulfill & status' },
               { href: '/admin/abandoned', label: 'Abandoned', hint: 'Partial checkouts' },
-              { href: '/admin/products', label: 'Catalog', hint: 'Stock & pricing' },
+              { href: '/admin/products', label: 'Catalog', hint: 'Stock, sale price, promo' },
             ].map((item) => (
               <Link
                 key={item.href}

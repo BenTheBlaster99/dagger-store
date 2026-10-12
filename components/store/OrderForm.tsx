@@ -26,6 +26,7 @@ import {
   type VariantRecord,
 } from '@/lib/product-pricing'
 import { productImages, type CatalogProduct } from '@/lib/catalog'
+import { promoOff } from '@/lib/promo'
 
 const BUNDLE_OPTIONS = [
   { qty: 1, savePercent: 0, popular: false },
@@ -64,6 +65,10 @@ export default function OrderForm({
   const [completedTotal, setCompletedTotal] = useState(0)
   const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'bureau'>('home')
   const [bundleQty, setBundleQty] = useState(1)
+  const [promoInput, setPromoInput] = useState('')
+  const [promo, setPromo] = useState<{ code: string; amount: number } | null>(null)
+  const [promoError, setPromoError] = useState('')
+  const [promoBusy, setPromoBusy] = useState(false)
 
   const [form, setForm] = useState({
     customer_name: '',
@@ -103,10 +108,50 @@ export default function OrderForm({
     return getWilayaDelivery(form.wilaya, deliveryMethod)
   }, [form.wilaya, deliveryMethod])
 
+  const promoCut = promo ? promoOff(bundlePrice.discounted, promo.amount) : 0
+  const goodsTotal = bundlePrice.discounted - promoCut
+
   const total = useMemo(() => {
     if (deliveryCost === null) return null
-    return bundlePrice.discounted + deliveryCost
-  }, [bundlePrice.discounted, deliveryCost])
+    return goodsTotal + deliveryCost
+  }, [goodsTotal, deliveryCost])
+
+  async function checkPromo(code: string) {
+    const res = await fetch('/api/promo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    })
+    const data = await res.json()
+    if (!res.ok || !data.valid) {
+      return { valid: false as const, error: data.error || 'الرمز غير صالح' }
+    }
+    return {
+      valid: true as const,
+      code: String(data.code),
+      amount: Number(data.discountDa),
+    }
+  }
+
+  async function applyPromo() {
+    setPromoBusy(true)
+    setPromoError('')
+    try {
+      const result = await checkPromo(promoInput)
+      if (!result.valid) {
+        setPromo(null)
+        setPromoError(result.error)
+        return
+      }
+      setPromo({ code: result.code, amount: result.amount })
+      setPromoInput(result.code)
+    } catch {
+      setPromo(null)
+      setPromoError('تعذر التحقق من الرمز')
+    } finally {
+      setPromoBusy(false)
+    }
+  }
 
   useEffect(() => {
     if (checkoutTracked) return
@@ -215,7 +260,32 @@ export default function OrderForm({
 
     setSubmitting(true)
     setErrors({})
+    let appliedPromo = promo
+    if (promo) {
+      try {
+        const fresh = await checkPromo(promo.code)
+        if (!fresh.valid) {
+          setPromo(null)
+          setPromoError('انتهت صلاحية الرمز')
+          setSubmitting(false)
+          return
+        }
+        appliedPromo = { code: fresh.code, amount: fresh.amount }
+        setPromo(appliedPromo)
+      } catch {
+        setPromoError('تعذر التحقق من الرمز')
+        setSubmitting(false)
+        return
+      }
+    }
     const phone = form.phone.trim().replace(/\s/g, '')
+    const promoNote = appliedPromo
+      ? `Promo ${appliedPromo.code} -${appliedPromo.amount} DA`
+      : null
+    const chargedGoods = appliedPromo
+      ? bundlePrice.discounted - promoOff(bundlePrice.discounted, appliedPromo.amount)
+      : bundlePrice.discounted
+    const chargedTotal = chargedGoods + Number(deliveryCost)
 
     try {
       const { data: banRow } = await supabase
@@ -231,11 +301,11 @@ export default function OrderForm({
         address: form.commune,
         wilaya: form.wilaya,
         commune: form.commune,
-        notes: null,
+        notes: promoNote,
         delivery_method:
           deliveryMethod === 'home' ? 'Domicile' : 'Stop Desk / Bureau',
         delivery_cost: Number(deliveryCost),
-        total_price: Number(total),
+        total_price: Number(chargedTotal),
         status: 'pending',
         size: form.size || null,
         color: form.color || null,
@@ -291,12 +361,12 @@ export default function OrderForm({
             commune: form.commune,
             delivery_method: orderData.delivery_method,
             delivery_cost: deliveryCost,
-            total_price: total,
+            total_price: chargedTotal,
+            notes: promoNote,
             product_name: product.name,
             quantity: bundleQty,
             size: form.size,
             color: form.color,
-            notes: null,
           }),
         })
       } catch {}
@@ -318,7 +388,7 @@ export default function OrderForm({
         }
       } catch {}
 
-      setCompletedTotal(total)
+      setCompletedTotal(chargedTotal)
       setOrderSuccess(true)
     } catch (err: unknown) {
       setErrors({
@@ -577,6 +647,37 @@ export default function OrderForm({
                 </button>
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-muted">رمز التخفيض</p>
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={(e) => {
+                    setPromoInput(e.target.value.toUpperCase())
+                    setPromo(null)
+                    setPromoError('')
+                  }}
+                  placeholder="CODE"
+                  dir="ltr"
+                  className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-left text-sm uppercase tracking-[0.12em] outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  onClick={applyPromo}
+                  disabled={promoBusy || !promoInput.trim()}
+                  className="rounded-xl border border-border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  {promoBusy ? '…' : 'تطبيق'}
+                </button>
+              </div>
+              {promo && (
+                <p className="text-xs text-price">
+                  {promo.code} · خصم {promo.amount.toLocaleString()} DA
+                </p>
+              )}
+              {promoError && <p className="text-xs text-brand">{promoError}</p>}
+            </div>
           </div>
 
           {errors.general && (
@@ -591,11 +692,19 @@ export default function OrderForm({
             <SummaryRow
               icon={ShoppingCart}
               label="سعر المنتج"
-              value={`DZD ${bundlePrice.discounted.toLocaleString('en-US', {
+              value={`DZD ${goodsTotal.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
               })}`}
               price
             />
+            {promo && (
+              <SummaryRow
+                icon={ShoppingBag}
+                label={`خصم ${promo.code}`}
+                value={`- ${promo.amount.toLocaleString()} DA`}
+                price
+              />
+            )}
             <SummaryRow
               icon={Truck}
               label="سعر التوصيل"

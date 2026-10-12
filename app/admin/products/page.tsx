@@ -12,6 +12,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { AdminShell } from '@/components/AdminNav'
+import { ProductPromoPanel } from '@/components/ProductPromoPanel'
 import {
   CLOTHING_SIZES,
   DEFAULT_COLORS,
@@ -299,6 +300,7 @@ export default function AdminProductsPage() {
       }
     >
       <div className="space-y-4">
+        <ProductPromoPanel />
 
         {error && (
           <div className="border border-brand/40 bg-brand/10 text-brand px-3 py-2 text-sm">
@@ -359,7 +361,7 @@ export default function AdminProductsPage() {
                   min="0"
                   value={form.coupon_price}
                   onChange={(e) => setForm((f) => ({ ...f, coupon_price: e.target.value }))}
-                  placeholder="Leave empty = no discount"
+                  placeholder="Empty = full price. Not the promo code."
                   className="w-full rounded-lg border border-white/15 bg-[#121212] text-zinc-100 px-3 py-2"
                 />
               </label>

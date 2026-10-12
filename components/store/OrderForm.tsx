@@ -30,7 +30,7 @@ import { promoOff } from '@/lib/promo'
 
 const BUNDLE_OPTIONS = [
   { qty: 1, savePercent: 0, popular: false },
-  { qty: 2, savePercent: 10, popular: true },
+  { qty: 2, savePercent: 5, popular: true },
 ] as const
 
 type Props = {
